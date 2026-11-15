@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0b14">
+<title>Estación Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0b14;--card:#151527;--line:#24243d;--txt:#e9e9f5;--dim:#8a8aa8;--vio:#6C63FF;--cy:#26C6DA;--ok:#3ddc97;--warn:#ffb547;--bad:#ff5c7a}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--txt);font-family:Outfit,system-ui,sans-serif;overflow:hidden}
+  .pantalla{position:absolute;inset:0;display:none;flex-direction:column;padding:max(16px,env(safe-area-inset-top)) 16px 16px}
+  .pantalla.activa{display:flex}
+  h1{font-size:22px;font-weight:700;letter-spacing:.3px}
+  h1 span{background:linear-gradient(90deg,var(--vio),var(--cy));-webkit-background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:14px;margin-top:4px}
+  input{width:100%;background:#0f0f1d;border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:14px;font:inherit;font-size:16px;margin-top:10px}
+  button{font:inherit;border:0;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--vio),#5249e0);cursor:pointer}
+  button.sec{background:var(--card);border:1px solid var(--line);color:var(--txt);font-weight:400}
+  button.link{background:none;color:var(--cy);padding:10px 0;font-weight:400;font-size:14px}
+  .err{color:var(--bad);font-size:14px;min-height:20px;margin-top:8px}
+  #login{justify-content:center;max-width:420px;margin:0 auto}
+  #login button{width:100%;margin-top:16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:6px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.bad{background:var(--bad)}
+  .dot.warn{background:var(--warn)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .card .k{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  .card .v{font-size:20px;font-weight:600;margin-top:6px}
+  .barra{height:8px;border-radius:6px;background:#0f0f1d;margin-top:10px;overflow:hidden;position:relative}
+  .barra i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--cy),var(--vio));transition:width .1s}
+  .barra b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--warn)}
+  .vista{position:relative;margin-top:12px;flex:1;min-height:160px;border-radius:16px;overflow:hidden;background:#05050b;border:1px solid var(--line)}
+  .vista video{width:100%;height:100%;object-fit:cover}
+  .vista .vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;text-align:center;padding:20px}
+  .log{margin-top:10px;font-size:13px;color:var(--dim);max-height:90px;overflow:hidden}
+  .log div{padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .botones{display:flex;gap:8px;margin-top:10px}
+  .botones button{flex:1;padding:12px;font-size:14px}
+  #viendo{display:none;position:absolute;top:10px;left:10px;background:rgba(255,92,122,.9);color:#fff;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px}
+  #remoto{position:fixed;inset:0;background:#000;display:none;z-index:20}
+  #remoto video{width:100%;height:100%;object-fit:cover}
+  #remoto .et{position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:18px;text-shadow:0 2px 8px #000}
+  #negra{position:fixed;inset:0;background:#000;z-index:30;display:none;align-items:flex-end;justify-content:center;padding-bottom:40px;color:#222;font-size:13px}
+  #ajustes{position:fixed;inset:0;background:rgba(5,5,12,.96);z-index:40;display:none;flex-direction:column;padding:20px;overflow:auto}
+  #ajustes label{display:block;color:var(--dim);font-size:13px;margin-top:16px}
+  #ajustes .fila{display:flex;gap:8px;margin-top:20px}
+  #ajustes .fila button{flex:1}
+  .nota{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="pantalla">
+  <h1>🏠 <span>Estación Casa</span></h1>
+  <p class="sub">Este celular se queda en la casa como cámara y asistente.</p>
+  <input id="lEmail" type="email" placeholder="Correo" autocomplete="username">
+  <input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button id="lBtn">Entrar</button>
+  <button id="lReset" class="link">¿Olvidaste la contraseña o nunca pusiste una?</button>
+  <div id="lErr" class="err"></div>
+</section>
+
+<!-- PRINCIPAL -->
+<section id="main" class="pantalla">
+  <div class="top">
+    <h1>🏠 <span>Estación Casa</span></h1>
+    <span class="chip"><i id="dRed" class="dot"></i><span id="tRed">Conectando…</span></span>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="k">Modo</div><div class="v" id="vModo">—</div></div>
+    <div class="card"><div class="k">Cámara</div><div class="v" id="vCam">Apagada</div></div>
+    <div class="card" style="grid-column:span 2">
+      <div class="k">Sonido <span id="vDb" style="float:right;text-transform:none"></span></div>
+      <div class="barra"><i id="bNivel"></i><b id="bUmbral"></b></div>
+    </div>
+  </div>
+
+  <div class="vista">
+    <video id="local" autoplay playsinline muted></video>
+    <div id="vacio" class="vacio">Cámara apagada.<br>Se enciende sola si escucha algo.</div>
+    <div id="viendo">● Te están viendo</div>
+  </div>
+
+  <div class="log" id="log"></div>
+  <div class="botones">
+    <button class="sec" id="bNegra">🌙 Pantalla negra</button>
+    <button class="sec" id="bAjustes">⚙️ Ajustes</button>
+  </div>
+</section>
+
+<div id="remoto"><video id="remVideo" autoplay playsinline></video><div class="et">📞 Llamada desde el celular de David</div></div>
+<audio id="remAudio" autoplay></audio>
+<div id="negra">toca para encender</div>
+
+<div id="ajustes">
+  <h1>⚙️ <span>Ajustes</span></h1>
+  <label>Clave de Gemini (para que la IA entienda lo que ve)</label>
+  <input id="aKey" type="password" placeholder="AIza…">
+  <p class="nota">Se saca gratis en aistudio.google.com → "Get API key". Se guarda solo en este celular.</p>
+  <label>Modelo de Gemini</label>
+  <input id="aModelo" placeholder="gemini-2.5-flash">
+  <label>Apagar cámara después de (segundos sin actividad)</label>
+  <input id="aHold" type="number" min="10" max="600" placeholder="30">
+  <div class="fila">
+    <button id="aGuardar">Guardar</button>
+    <button id="aCerrar" class="sec">Cerrar</button>
+  </div>
+  <div class="fila"><button id="aProbar" class="sec">🧪 Probar IA ahora</button></div>
+  <div class="fila"><button id="aSalir" class="sec" style="color:var(--bad)">Cerrar sesión</button></div>
+  <p class="nota" id="aInfo"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+import { getDatabase, ref, set, update, push, remove, get, onValue, onChildAdded, onDisconnect, serverTimestamp, query, orderByKey, limitToFirst } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJbL03qZpALAfjvGNm7umb9XKDE1oEbfA",
+  authDomain: "coffechat-5036f.firebaseapp.com",
+  databaseURL: "https://coffechat-5036f-default-rtdb.firebaseio.com",
+  projectId: "coffechat-5036f",
+  storageBucket: "coffechat-5036f.firebasestorage.app",
+  messagingSenderId: "250856876684",
+  appId: "1:250856876684:web:53c1b6dc796c1f540d29a9"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// Puente con la APK (si se abre en un navegador normal, no hace nada)
+const A = window.Android || { bateria: () => null, atenuar: () => {}, altavoz: () => {} };
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const MAX_EVENTOS = 150;
+const ESPERA_EVENTO = 45000;   // no repetir el mismo tipo de evento antes de 45 s
+const ESPERA_IA = 60000;       // máximo una consulta a la IA por minuto
+
+// ---------- estado ----------
+let modo = 'auto', sens = 5, lente = 'environment', iaOn = true;
+let micStream = null, camStream = null;
+let audioCtx = null, analyser = null, buf = null;
+let piso = -60, nivelDb = -90;
+let ultimoSonido = 0, ultimoMov = 0, camDesde = 0;
+let ultimoEvento = {}, ultimaIA = 0, procesando = false;
+let pc = null, llamadaId = null, quitarIce = null, temporizadorFallo = null;
+let turn = null;
+let ultimoToque = Date.now();
+
+const cfgLocal = () => ({
+  key: localStorage.getItem('gemKey') || '',
+  modelo: localStorage.getItem('gemModelo') || 'gemini-2.5-flash',
+  hold: (parseInt(localStorage.getItem('camHold')) || 30) * 1000
+});
+
+function log(txt) {
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) + ' · ' + txt;
+  $('log').prepend(d);
+  while ($('log').children.length > 6) $('log').lastChild.remove();
+}
+
+// ---------- login ----------
+$('lBtn').onclick = async () => {
+  $('lErr').textContent = '';
+  try { await signInWithEmailAndPassword(auth, $('lEmail').value.trim(), $('lPass').value); }
+  catch (e) { $('lErr').textContent = traducirError(e); }
+};
+$('lReset').onclick = async () => {
+  const em = $('lEmail').value.trim();
+  if (!em) { $('lErr').textContent = 'Escribe tu correo primero.'; return; }
+  try { await sendPasswordResetEmail(auth, em); $('lErr').style.color = 'var(--ok)'; $('lErr').textContent = 'Te mandé un correo para poner la contraseña.'; }
+  catch (e) { $('lErr').textContent = traducirError(e); }
+};
+function traducirError(e) {
+  const c = e.code || '';
+  if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'Correo o contraseña incorrectos.';
+  if (c.includes('too-many-requests')) return 'Demasiados intentos. Espera un momento.';
+  if (c.includes('network')) return 'Sin internet.';
+  if (c.includes('operation-not-allowed')) return 'Activa "Correo/contraseña" en Firebase → Authentication.';
+  return e.message || String(e);
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { mostrar('login'); return; }
+  mostrar('main');
+  await arrancar();
+});
+function mostrar(id) { document.querySelectorAll('.pantalla').forEach(s => s.classList.toggle('activa', s.id === id)); }
+
+// ---------- arranque ----------
+let arrancado = false;
+async function arrancar() {
+  if (arrancado) return; arrancado = true;
+  log('Sesión iniciada');
+
+  // Conexión a Firebase
+  onValue(ref(db, '.info/connected'), s => {
+    const ok = s.val() === true;
+    $('dRed').className = 'dot ' + (ok ? 'ok' : 'bad');
+    $('tRed').textContent = ok ? 'En línea' : 'Sin conexión';
+    if (ok) {
+      onDisconnect(ref(db, 'casa/estado/online')).set(false);
+      publicarEstado();
+    }
+  });
+
+  // Órdenes desde la interfaz
+  onValue(ref(db, 'casa/control'), s => {
+    const c = s.val() || {};
+    const modoAnterior = modo;
+    modo = c.modo || 'auto';
+    sens = c.sens || 5;
+    iaOn = c.ia !== false;
+    const lenteNueva = c.lente || 'environment';
+    $('vModo').textContent = { auto: 'Automático', on: 'Siempre', off: 'Solo oír', privado: 'Privado' }[modo] || modo;
+    if (modo !== modoAnterior) log('Modo: ' + $('vModo').textContent);
+    if (lenteNueva !== lente) { lente = lenteNueva; if (camStream) reiniciarCamara(); }
+    aplicarModo();
+  }, e => log('Sin permiso para leer control: ' + e.message));
+
+  onValue(ref(db, 'casa/config'), s => { turn = s.val(); });
+
+  // Llamadas en vivo
+  onValue(ref(db, 'casa/llamada'), s => {
+    const v = s.val();
+    if (!v) { if (pc) { log('Llamada terminada'); cerrarLlamada(false); } return; }
+    if (v.offer && !v.answer && v.id !== llamadaId) {
+      if (Date.now() - (v.ts || 0) > 90000) return; // oferta vieja
+      atenderLlamada(v).catch(e => { log('Error en llamada: ' + e.message); cerrarLlamada(true); });
+    }
+  });
+
+  await aplicarModo();
+  setInterval(cicloSonido, 100);
+  setInterval(cicloMovimiento, 500);
+  setInterval(cicloCamara, 2000);
+  setInterval(publicarEstado, 30000);
+  setInterval(podarEventos, 10 * 60000);
+  setInterval(cicloPantalla, 5000);
+  registrarEvento('sistema', 'La estación se encendió', false, true);
+}
+
+// ---------- modos ----------
+async function aplicarModo() {
+  if (modo === 'privado') {
+    if (!pc) { apagarCamara(); detenerMic(); }
+  } else {
+    if (!micStream) await iniciarMic();
+    if (modo === 'on') await encenderCamara('siempre');
+    if (modo === 'off' && !pc) apagarCamara();
+  }
+  publicarEstado();
+}
+
+// ---------- micrófono y sonido ----------
+let abriendoMic = null;
+function iniciarMic() {
+  if (micStream) return Promise.resolve();
+  if (!abriendoMic) abriendoMic = abrirMic().finally(() => { abriendoMic = null; });
+  return abriendoMic;
+}
+async function abrirMic() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+    });
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    const src = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    buf = new Float32Array(analyser.fftSize);
+    src.connect(analyser);
+    log('Micrófono escuchando');
+  } catch (e) {
+    micStream = null;
+    log('No pude abrir el micrófono: ' + e.message);
+  }
+}
+function detenerMic() {
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; analyser = null; log('Micrófono apagado (privado)'); }
+}
+function umbralDb() { return 32 - sens * 2.4; } // sens 1 → 29.6 dB sobre lo normal, sens 10 → 8 dB
+
+function cicloSonido() {
+  if (!analyser) { $('bNivel').style.width = '0'; return; }
+  analyser.getFloatTimeDomainData(buf);
+  let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+  const rms = Math.sqrt(s / buf.length);
+  nivelDb = 20 * Math.log10(rms + 1e-8);
+  // el "piso" es el ruido normal de la casa: baja rápido, sube despacio
+  if (nivelDb < piso) piso = piso * 0.9 + nivelDb * 0.1;
+  else piso = piso * 0.9995 + nivelDb * 0.0005;
+  piso = Math.max(-90, Math.min(-25, piso));
+
+  const sobre = nivelDb - piso;
+  const pct = v => Math.max(0, Math.min(100, (v + 90) / 90 * 100));
+  $('bNivel').style.width = pct(nivelDb) + '%';
+  $('bUmbral').style.left = pct(piso + umbralDb()) + '%';
+  $('vDb').textContent = Math.round(nivelDb) + ' dB';
+
+  if (sobre > umbralDb() && nivelDb > -55) {
+    const ahora = Date.now();
+    const nuevo = ahora - ultimoSonido > 3000;
+    ultimoSonido = ahora;
+    if (nuevo) alEscuchar(Math.round(sobre));
+  }
+}
+
+async function alEscuchar(sobre) {
+  if (procesando || modo === 'privado') return;
+  procesando = true;
+  try {
+    let conFoto = false;
+    if (modo === 'auto' || modo === 'on') {
+      const estabaApagada = !camStream;
+      await encenderCamara('sonido');
+      if (estabaApagada) await sleep(1500); // que la cámara ajuste la luz
+      conFoto = !!camStream;
+    }
+    await registrarEvento('sonido', `Escuché un ruido (${sobre} dB sobre lo normal)`, conFoto);
+  } finally { procesando = false; }
+}
+
+// ---------- cámara ----------
+let abriendoCam = null;
+function encenderCamara(motivo) {
+  if (camStream) return Promise.resolve();
+  if (!abriendoCam) abriendoCam = abrirCamara(motivo).finally(() => { abriendoCam = null; });
+  return abriendoCam;
+}
+async function abrirCamara(motivo) {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: lente }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 20, max: 24 } }
+    });
+    camDesde = Date.now();
+    prevFrame = null;
+    $('local').srcObject = camStream;
+    $('vacio').style.display = 'none';
+    $('vCam').textContent = 'Encendida';
+    log('Cámara encendida (' + motivo + ')');
+    publicarEstado();
+  } catch (e) {
+    camStream = null;
+    log('No pude abrir la cámara: ' + e.message);
+  }
+}
+function apagarCamara() {
+  if (!camStream) return;
+  camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  $('local').srcObject = null;
+  $('vacio').style.display = 'flex';
+  $('vCam').textContent = 'Apagada';
+  log('Cámara apagada');
+  publicarEstado();
+}
+async function reiniciarCamara() {
+  apagarCamara();
+  await encenderCamara('cambio de lente');
+  if (pc && camStream) {
+    const t = pc.getTransceivers().find(x => x.receiver.track && x.receiver.track.kind === 'video');
+    if (t) await t.sender.replaceTrack(camStream.getVideoTracks()[0]);
+  }
+}
+
+function cicloCamara() {
+  const hold = cfgLocal().hold;
+  if (pc) return; // en llamada la cámara se queda
+  if (modo === 'on') { if (!camStream) encenderCamara('siempre'); return; }
+  if (modo === 'off' || modo === 'privado') { apagarCamara(); return; }
+  if (camStream && !procesando) {
+    const ultimaActividad = Math.max(ultimoSonido, ultimoMov, camDesde);
+    if (Date.now() - ultimaActividad > hold) apagarCamara();
+  }
+}
+
+// ---------- movimiento ----------
+const cMov = document.createElement('canvas'); cMov.width = 80; cMov.height = 60;
+const xMov = cMov.getContext('2d', { willReadFrequently: true });
+let prevFrame = null;
+function cicloMovimiento() {
+  const v = $('local');
+  if (!camStream || v.readyState < 2) return;
+  if (Date.now() - camDesde < 2500) return; // ignorar el ajuste inicial de la cámara
+  xMov.drawImage(v, 0, 0, 80, 60);
+  const d = xMov.getImageData(0, 0, 80, 60).data;
+  const gris = new Uint8Array(80 * 60);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) gris[j] = (d[i] * 3 + d[i + 1] * 6 + d[i + 2]) / 10;
+  if (prevFrame) {
+    let cambios = 0;
+    for (let i = 0; i < gris.length; i++) if (Math.abs(gris[i] - prevFrame[i]) > 25) cambios++;
+    const ratio = cambios / gris.length;
+    const limite = 0.13 - sens * 0.01; // sens 5 → 8% de la imagen
+    if (ratio > limite && ratio < 0.85) { // >85% suele ser un cambio de luz, no movimiento
+      ultimoMov = Date.now();
+      if (!procesando && !pc) registrarEvento('movimiento', `Movimiento detectado (${Math.round(ratio * 100)}% de la imagen)`, true);
+    }
+  }
+  prevFrame = gris;
+}
+
+function captura(ancho = 320, calidad = 0.6) {
+  const v = $('local');
+  if (!camStream || v.readyState < 2 || !v.videoWidth) return null;
+  const c = document.createElement('canvas');
+  c.width = ancho; c.height = Math.round(ancho * v.videoHeight / v.videoWidth);
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', calidad);
+}
+
+// ---------- eventos ----------
+async function registrarEvento(tipo, txt, conFoto, forzar = false) {
+  const ahora = Date.now();
+  if (!forzar && ahora - (ultimoEvento[tipo] || 0) < ESPERA_EVENTO) return;
+  ultimoEvento[tipo] = ahora;
+  const img = conFoto ? captura() : null;
+  const r = push(ref(db, 'casa/eventos'));
+  const datos = { t: ahora, tipo, txt };
+  if (img) datos.img = img;
+  try { await set(r, datos); } catch (e) { log('No pude guardar evento: ' + e.message); return; }
+  log(txt);
+  const { key } = cfgLocal();
+  if (img && iaOn && key && ahora - ultimaIA > ESPERA_IA) {
+    ultimaIA = ahora;
+    const res = await analizarIA(img, tipo);
+    if (res) {
+      update(r, { ia: String(res.resumen || '').slice(0, 390), alerta: !!res.alerta }).catch(() => {});
+      log('IA: ' + res.resumen);
+    }
+  }
+}
+
+async function podarEventos() {
+  try {
+    const snap = await get(ref(db, 'casa/eventos'));
+    const n = snap.size;
+    if (n <= MAX_EVENTOS) return;
+    const viejos = await get(query(ref(db, 'casa/eventos'), orderByKey(), limitToFirst(n - MAX_EVENTOS)));
+    const borrar = {};
+    viejos.forEach(c => { borrar[c.key] = null; });
+    await update(ref(db, 'casa/eventos'), borrar);
+  } catch (e) { /* no pasa nada */ }
+}
+
+// ---------- cerebro (Gemini) ----------
+async function analizarIA(dataUrl, motivo) {
+  const { key, modelo } = cfgLocal();
+  if (!key) return null;
+  const prompt = `Eres el asistente de seguridad de una casa en Guatemala. Esta foto la tomó la cámara de la casa porque detectó ${motivo === 'sonido' ? 'un ruido' : 'movimiento'}.
+Describe en UNA frase corta en español qué se ve (personas, niños, animales, objetos, si la escena es normal).
+Marca "alerta": true SOLO si parece algo preocupante: una persona desconocida forzando algo, fuego, humo, agua, alguien caído en el suelo, o un animal peligroso. Una familia en su casa haciendo cosas normales NO es alerta.
+Responde solo JSON: {"resumen":"...","alerta":false}`;
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: 'image/jpeg', data: dataUrl.split(',')[1] } }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: 200 }
+      })
+    });
+    const j = await r.json();
+    if (!r.ok) { log('IA error: ' + (j.error && j.error.message || r.status)); return null; }
+    const txt = j.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    const limpio = txt.replace(/```json|```/g, '').trim();
+    return JSON.parse(limpio);
+  } catch (e) { log('IA no respondió: ' + e.message); return null; }
+}
+
+// ---------- estado hacia la interfaz ----------
+function publicarEstado() {
+  if (!auth.currentUser) return;
+  let bat = -1, carga = false;
+  try { const b = JSON.parse(A.bateria() || 'null'); if (b) { bat = b.nivel; carga = b.cargando; } } catch (e) {}
+  update(ref(db, 'casa/estado'), {
+    online: true, ts: serverTimestamp(), cam: !!camStream, mic: !!micStream,
+    modo, lente, bat, carga, db: Math.round(nivelDb), viendo: !!pc, ia: !!cfgLocal().key
+  }).catch(e => log('No pude publicar estado: ' + e.message));
+}
+
+// ---------- llamada en vivo (WebRTC) ----------
+function servidoresIce() {
+  const s = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+  if (turn && turn.turnUrl) s.push({ urls: turn.turnUrl.split(',').map(x => x.trim()), username: turn.turnUser || '', credential: turn.turnPass || '' });
+  return s;
+}
+
+async function atenderLlamada(v) {
+  cerrarLlamada(false);
+  llamadaId = v.id;
+  log('Llamada entrante');
+  if (!micStream) await iniciarMic();
+  await encenderCamara('llamada');
+
+  pc = new RTCPeerConnection({ iceServers: servidoresIce() });
+  pc.onicecandidate = e => { if (e.candidate) push(ref(db, 'casa/llamada/iceC'), e.candidate.toJSON()).catch(() => {}); };
+  pc.ontrack = e => manejarRemoto(e.track);
+  pc.onconnectionstatechange = () => {
+    const st = pc && pc.connectionState;
+    if (st === 'connected') { clearTimeout(temporizadorFallo); log('Conectado en vivo'); }
+    if (st === 'failed') { log('La conexión falló'); cerrarLlamada(true); }
+    if (st === 'disconnected') { clearTimeout(temporizadorFallo); temporizadorFallo = setTimeout(() => { if (pc && pc.connectionState !== 'connected') cerrarLlamada(true); }, 12000); }
+  };
+
+  await pc.setRemoteDescription(v.offer);
+  for (const t of pc.getTransceivers()) {
+    const kind = t.receiver.track && t.receiver.track.kind;
+    if (kind === 'audio' && micStream) await t.sender.replaceTrack(micStream.getAudioTracks()[0]);
+    if (kind === 'video' && camStream) await t.sender.replaceTrack(camStream.getVideoTracks()[0]);
+    t.direction = 'sendrecv';
+  }
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  await update(ref(db, 'casa/llamada'), { answer: { type: ans.type, sdp: ans.sdp } });
+  quitarIce = onChildAdded(ref(db, 'casa/llamada/iceV'), s => { if (pc) pc.addIceCandidate(s.val()).catch(() => {}); });
+
+  try { A.altavoz(true); } catch (e) {}
+  $('viendo').style.display = 'block';
+  despertarPantalla();
+  publicarEstado();
+  // si nadie se conecta en 30 s, cerrar
+  temporizadorFallo = setTimeout(() => { if (pc && pc.connectionState !== 'connected') { log('Nadie se conectó'); cerrarLlamada(true); } }, 30000);
+}
+
+function manejarRemoto(track) {
+  if (track.kind === 'audio') {
+    $('remAudio').srcObject = new MediaStream([track]);
+    $('remAudio').play().catch(() => {});
+  } else {
+    $('remVideo').srcObject = new MediaStream([track]);
+    track.onunmute = () => { $('remoto').style.display = 'block'; $('remVideo').play().catch(() => {}); despertarPantalla(); };
+    track.onmute = () => { $('remoto').style.display = 'none'; };
+    track.onended = () => { $('remoto').style.display = 'none'; };
+  }
+}
+
+function cerrarLlamada(borrarEnFirebase) {
+  clearTimeout(temporizadorFallo);
+  if (quitarIce) { quitarIce(); quitarIce = null; }
+  if (pc) { try { pc.close(); } catch (e) {} pc = null; }
+  $('remoto').style.display = 'none';
+  $('remAudio').srcObject = null; $('remVideo').srcObject = null;
+  $('viendo').style.display = 'none';
+  try { A.altavoz(false); } catch (e) {}
+  if (borrarEnFirebase) remove(ref(db, 'casa/llamada')).catch(() => {});
+  llamadaId = borrarEnFirebase ? null : llamadaId;
+  publicarEstado();
+  if (modo === 'privado') { apagarCamara(); detenerMic(); }
+}
+
+// ---------- pantalla ----------
+function despertarPantalla() {
+  ultimoToque = Date.now();
+  $('negra').style.display = 'none';
+  try { A.atenuar(false); } catch (e) {}
+}
+function ponerNegra() {
+  $('negra').style.display = 'flex';
+  try { A.atenuar(true); } catch (e) {}
+}
+function cicloPantalla() {
+  if (pc) return;
+  if (Date.now() - ultimoToque > 90000 && $('negra').style.display !== 'flex' && $('ajustes').style.display !== 'flex') ponerNegra();
+}
+document.addEventListener('pointerdown', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); despertarPantalla(); }, true);
+$('bNegra').onclick = e => { e.stopPropagation(); setTimeout(ponerNegra, 50); };
+
+// ---------- ajustes ----------
+$('bAjustes').onclick = () => {
+  const c = cfgLocal();
+  $('aKey').value = c.key; $('aModelo').value = c.modelo; $('aHold').value = c.hold / 1000;
+  $('aInfo').textContent = 'Cuenta: ' + (auth.currentUser?.email || '');
+  $('ajustes').style.display = 'flex';
+};
+$('aCerrar').onclick = () => { $('ajustes').style.display = 'none'; };
+$('aGuardar').onclick = () => {
+  localStorage.setItem('gemKey', $('aKey').value.trim());
+  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-2.5-flash');
+  localStorage.setItem('camHold', String(Math.max(10, Math.min(600, parseInt($('aHold').value) || 30))));
+  $('ajustes').style.display = 'none';
+  log('Ajustes guardados');
+  publicarEstado();
+};
+$('aProbar').onclick = async () => {
+  localStorage.setItem('gemKey', $('aKey').value.trim());
+  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-2.5-flash');
+  $('aInfo').textContent = 'Probando…';
+  const apagada = !camStream;
+  await encenderCamara('prueba');
+  await sleep(1500);
+  const img = captura();
+  if (!img) { $('aInfo').textContent = 'No hay imagen de la cámara.'; return; }
+  const r = await analizarIA(img, 'movimiento');
+  $('aInfo').textContent = r ? 'IA dice: ' + r.resumen + (r.alerta ? ' ⚠️' : '') : 'La IA no respondió. Revisa la clave.';
+  if (apagada && modo !== 'on') camDesde = Date.now() - cfgLocal().hold + 5000;
+};
+$('aSalir').onclick = async () => {
+  await update(ref(db, 'casa/estado'), { online: false }).catch(() => {});
+  await signOut(auth); location.reload();
+};
+</script>
+</body>
+</html>
