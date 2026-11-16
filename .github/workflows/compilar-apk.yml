@@ -19,6 +19,29 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Modelo de voz en español (sin internet)
+        run: |
+          curl -fsSL -o /tmp/modelo.zip https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip
+          unzip -q /tmp/modelo.zip -d /tmp/modelo
+          mkdir -p apk/app/src/main/assets/model-es
+          cp -r /tmp/modelo/vosk-model-small-es-0.42/* apk/app/src/main/assets/model-es/
+          echo "es-0.42" > apk/app/src/main/assets/model-es/uuid
+          du -sh apk/app/src/main/assets/model-es
+
+      - name: Llave fija
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/casa.jks"
+            echo "KS_FILE=$RUNNER_TEMP/casa.jks" >> "$GITHUB_ENV"
+            echo "KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
+            echo "Usando llave fija"
+          else
+            echo "::warning::No hay llave fija en Secrets: la APK se firma con una llave temporal"
+          fi
+
       - name: Compilar
         working-directory: apk
         run: |
