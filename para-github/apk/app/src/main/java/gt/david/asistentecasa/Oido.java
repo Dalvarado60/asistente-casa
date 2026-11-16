@@ -203,7 +203,7 @@ public class Oido {
                 float umbral = Math.max(piso + 12f, -52f);
                 if (db > umbral) { huboVoz = true; ultimaVoz = ahora; }
                 long dur = ahora - inicioOrden;
-                boolean fin = (huboVoz && ahora - ultimaVoz > 1300) || dur > 10000 || (!huboVoz && dur > 6000);
+                boolean fin = (huboVoz && ahora - ultimaVoz > 1300) || dur > 10000 || (!huboVoz && dur > 8000);
                 if (fin) {
                     modo = ESPERA;
                     if (huboVoz) {
