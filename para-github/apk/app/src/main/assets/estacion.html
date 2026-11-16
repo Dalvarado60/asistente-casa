@@ -98,7 +98,7 @@
   <input id="aKey" type="password" placeholder="AQ.… o AIza…">
   <p class="nota">De aistudio.google.com/apikey (empieza con AQ. o AIza). Se guarda solo en este celular.</p>
   <label>Modelo de Gemini</label>
-  <input id="aModelo" placeholder="gemini-2.5-flash">
+  <input id="aModelo" placeholder="gemini-3.6-flash">
   <label>Apagar cámara (modo automático) después de… segundos</label>
   <input id="aHold" type="number" min="10" max="600" placeholder="30">
   <button id="aGuardar" class="pri">Guardar</button>
@@ -143,7 +143,7 @@ const MAX_EVENTOS = 150, ESPERA_EVENTO = 45000, ESPERA_IA = 60000;
 
 const cfg = () => ({
   key: localStorage.getItem('gemKey') || '',
-  modelo: localStorage.getItem('gemModelo') || 'gemini-2.5-flash',
+  modelo: localStorage.getItem('gemModelo') || 'gemini-3.6-flash',
   hold: (parseInt(localStorage.getItem('camHold')) || 30) * 1000,
   nombre: localStorage.getItem('asisNombre') || 'T-Bot',
   palabras: localStorage.getItem('asisPalabras') || 'ti bot, te bot, tibot, t bot, ti bote, te bote, ti vot',
@@ -521,7 +521,7 @@ function cicloMovimiento() {
     const r = c / 4800;
     if (r > 0.13 - sens * 0.01 && r < 0.85) {
       ultimoMov = Date.now();
-      if (!procesando && !pc) registrarEvento('movimiento', `Movimiento detectado (${Math.round(r * 100)}% de la imagen)`, true);
+      if (!procesando && !pc && asis === 'reposo') registrarEvento('movimiento', `Movimiento detectado (${Math.round(r * 100)}% de la imagen)`, true);
     }
   }
   prevFrame = gris;
@@ -544,7 +544,7 @@ async function registrarEvento(tipo, txt, conFoto, forzar = false) {
   const datos = { t: ahora, tipo, txt }; if (img) datos.img = img;
   try { await set(r, datos); } catch (e) { log('Evento no guardado: ' + e.message); return; }
   log(txt); ultimoTextoEvento = txt + ' a las ' + new Date().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
-  if (img && iaOn && cfg().key && ahora - ultimaIA > ESPERA_IA) {
+  if (img && iaOn && cfg().key && ahora - ultimaIA > ESPERA_IA && asis === 'reposo' && ahora - ultimaVozAsis > 30000) {
     ultimaIA = ahora;
     const res = await analizarImagen(img, tipo);
     if (res) { update(r, { ia: String(res.resumen || '').slice(0, 390), alerta: !!res.alerta }).catch(() => {}); ultimoTextoEvento = res.resumen; log('IA: ' + res.resumen); }
@@ -558,13 +558,19 @@ async function podarEventos() {
     const b = {}; viejos.forEach(c => { b[c.key] = null; }); await update(ref(db, 'casa/eventos'), b);
   } catch (e) {}
 }
-async function llamarGemini(modelo, parts, maxTokens) {
+// Nivel de "pensamiento": mínimo = respuesta rápida (los Gemini 3 piensan mucho por defecto)
+function configPensar(modelo, intento) {
+  if (/^gemini-2\.5-flash/.test(modelo)) return intento === 0 ? { thinkingBudget: 0 } : null;
+  if (/^gemini-[3-9]/.test(modelo)) return [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, null][intento] || null;
+  return null;
+}
+async function llamarGemini(modelo, parts, maxTokens, intento = 0) {
   const { key } = cfg();
   const gc = { responseMimeType: 'application/json', temperature: 0.4, maxOutputTokens: maxTokens };
-  // Sin "pensar": respuestas rápidas (en 2.5 Flash pensar puede tardar muchos segundos)
-  if (/^gemini-2\.5-flash/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 };
+  const tc = configPensar(modelo, intento);
+  if (tc) gc.thinkingConfig = tc;
   const corte = new AbortController();
-  const reloj = setTimeout(() => corte.abort(), 20000);
+  const reloj = setTimeout(() => corte.abort(), 30000);
   const t0 = Date.now();
   let r;
   try {
@@ -573,11 +579,16 @@ async function llamarGemini(modelo, parts, maxTokens) {
       body: JSON.stringify({ contents: [{ parts }], generationConfig: gc }), signal: corte.signal
     });
   } catch (e) {
-    throw new Error(e.name === 'AbortError' ? 'Gemini tardó más de 20 segundos' : 'Sin internet: ' + e.message);
+    throw new Error(e.name === 'AbortError' ? 'Gemini tardó más de 30 segundos' : 'Sin internet: ' + e.message);
   } finally { clearTimeout(reloj); }
-  log('Gemini ' + modelo + ' respondió en ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error((j.error && j.error.message) || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
+  // si el modelo no acepta ese nivel de pensamiento, prueba el siguiente
+  if (r.status === 400 && tc && /think/i.test(msg) && intento < 2) return llamarGemini(modelo, parts, maxTokens, intento + 1);
+  // saturado: reintenta una vez
+  if ((r.status === 503 || r.status === 500) && intento < 3) { await sleep(1200); return llamarGemini(modelo, parts, maxTokens, 3); }
+  if (!r.ok) { const e = new Error(msg); e.status = r.status; throw e; }
+  log('Gemini ' + modelo + ' respondió en ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
   const txt = (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
   return JSON.parse(txt.replace(/```json|```/g, '').trim());
 }
@@ -597,7 +608,7 @@ async function gemini(parts, maxTokens = 300) {
   const actual = cfg().modelo;
   try { return await llamarGemini(actual, parts, maxTokens); }
   catch (e) {
-    if (![400, 403, 404, 429].includes(e.status)) throw e;
+    if (![400, 403, 404, 429, 503].includes(e.status)) throw e;
     let lista = [];
     try { lista = (await modelosFlash()).filter(m => m !== actual); } catch (x) {}
     let ultimo = e;
@@ -607,7 +618,7 @@ async function gemini(parts, maxTokens = 300) {
         log('Modelo ' + actual + ' falló (' + e.status + '), ahora uso ' + m);
         localStorage.setItem('gemModelo', m);
         return res;
-      } catch (x) { ultimo = x; if (![400, 403, 404, 429].includes(x.status)) throw x; }
+      } catch (x) { ultimo = x; if (![400, 403, 404, 429, 503].includes(x.status)) throw x; }
     }
     throw ultimo;
   }
@@ -621,7 +632,7 @@ Responde solo JSON: {"resumen":"...","alerta":false}`;
 }
 
 // ================= ASISTENTE DE VOZ =================
-let vozDespues = null, apagarTimer = null, saludadoHoy = '', turno = 0;
+let vozDespues = null, apagarTimer = null, saludadoHoy = '', turno = 0, ultimaVozAsis = 0;
 window.casaNativo = {
   nivel: db => procesarNivel(db),
   estado: s => { log('Oído: ' + s); publicarEstado(); },
@@ -652,6 +663,7 @@ function saludo() {
 }
 
 function activarAsistente() {
+  ultimaVozAsis = Date.now();
   if (pc || modo === 'privado') { A.modoDespertar(); return; }
   clearTimeout(apagarTimer);
   despertarNucleo();
@@ -727,6 +739,7 @@ function ejecutar(accion, busqueda) {
 function ordenarModo(m) { update(ref(db, 'casa/control'), { modo: m, ts: Date.now() }).catch(e => log('Control: ' + e.message)); }
 
 function terminarAsistente(espera = 3500) {
+  ultimaVozAsis = Date.now();
   asis = 'reposo'; etiqueta('');
   A.enfoque(false);
   clearTimeout(apagarTimer);
@@ -846,7 +859,7 @@ function guardarAjustes() {
   const cambiaron = pal !== cfg().palabras;
   localStorage.setItem('asisPalabras', pal);
   localStorage.setItem('gemKey', $('aKey').value.trim());
-  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-2.5-flash');
+  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-3.6-flash');
   localStorage.setItem('camHold', String(Math.max(10, Math.min(600, parseInt($('aHold').value) || 30))));
   if (cambiaron && NATIVO) A.palabras(pal);
 }
