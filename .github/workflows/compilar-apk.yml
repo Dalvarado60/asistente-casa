@@ -33,13 +33,16 @@ jobs:
           KS_B64: ${{ secrets.KEYSTORE_B64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASS }}
         run: |
-          if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/casa.jks"
+          # quita espacios y saltos de línea que se cuelan al pegar en Secrets
+          KS_B64=$(printf "%s" "$KS_B64" | tr -d ' \r\n')
+          KS_PASS=$(printf "%s" "$KS_PASS" | tr -d ' \r\n')
+          if [ -n "$KS_B64" ] && printf "%s" "$KS_B64" | base64 -d > "$RUNNER_TEMP/casa.jks" 2>/dev/null \
+             && keytool -list -keystore "$RUNNER_TEMP/casa.jks" -storepass "$KS_PASS" -alias casa > /dev/null 2>&1; then
             echo "KS_FILE=$RUNNER_TEMP/casa.jks" >> "$GITHUB_ENV"
             echo "KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
-            echo "Usando llave fija"
+            echo "Llave fija OK"
           else
-            echo "::warning::No hay llave fija en Secrets: la APK se firma con una llave temporal"
+            echo "::warning::La llave de Secrets no abrió (revisa KEYSTORE_PASS). Se firma con llave temporal."
           fi
 
       - name: Compilar
