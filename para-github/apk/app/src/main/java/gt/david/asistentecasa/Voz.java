@@ -17,7 +17,7 @@ public class Voz {
         void termino();
     }
 
-    private final TextToSpeech tts;
+    private  TextToSpeech tts;
     private final Aviso aviso;
     private volatile boolean lista = false;
 
