@@ -95,10 +95,10 @@
   <input id="aPalabras" placeholder="ti bot, te bot">
   <p class="nota">Se escriben como suenan. "T-Bot" se escucha como "ti bot", por eso hay varias formas. Si se activa solo, quita las que se parecen a palabras comunes.</p>
   <label>Clave de Gemini</label>
-  <input id="aKey" type="password" placeholder="AIza…">
-  <p class="nota">Gratis en aistudio.google.com → "Get API key". Se guarda solo en este celular.</p>
+  <input id="aKey" type="password" placeholder="AQ.… o AIza…">
+  <p class="nota">De aistudio.google.com/apikey (empieza con AQ. o AIza). Se guarda solo en este celular.</p>
   <label>Modelo de Gemini</label>
-  <input id="aModelo" placeholder="gemini-2.5-flash">
+  <input id="aModelo" placeholder="gemini-3.8-flash">
   <label>Apagar cámara (modo automático) después de… segundos</label>
   <input id="aHold" type="number" min="10" max="600" placeholder="30">
   <button id="aGuardar" class="pri">Guardar</button>
@@ -143,7 +143,7 @@ const MAX_EVENTOS = 150, ESPERA_EVENTO = 45000, ESPERA_IA = 60000;
 
 const cfg = () => ({
   key: localStorage.getItem('gemKey') || '',
-  modelo: localStorage.getItem('gemModelo') || 'gemini-2.5-flash',
+  modelo: localStorage.getItem('gemModelo') || 'gemini-3.8-flash',
   hold: (parseInt(localStorage.getItem('camHold')) || 30) * 1000,
   nombre: localStorage.getItem('asisNombre') || 'T-Bot',
   palabras: localStorage.getItem('asisPalabras') || 'ti bot, te bot, tibot, t bot, ti bote, te bote, ti vot',
@@ -558,16 +558,38 @@ async function podarEventos() {
     const b = {}; viejos.forEach(c => { b[c.key] = null; }); await update(ref(db, 'casa/eventos'), b);
   } catch (e) {}
 }
-async function gemini(parts, maxTokens = 300) {
-  const { key, modelo } = cfg();
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent?key=${encodeURIComponent(key)}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+async function llamarGemini(modelo, parts, maxTokens) {
+  const { key } = cfg();
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key.trim() },
     body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.4, maxOutputTokens: maxTokens } })
   });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.error && j.error.message || ('HTTP ' + r.status));
-  const txt = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error((j.error && j.error.message) || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  const txt = (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
   return JSON.parse(txt.replace(/```json|```/g, '').trim());
+}
+// Busca el modelo "flash" más nuevo disponible para la clave (por si Google retira el que está guardado)
+async function buscarModelo() {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': cfg().key.trim() } });
+  const j = await r.json();
+  const ok = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+    .map(m => m.name.replace('models/', ''))
+    .filter(n => /^gemini-[\d.]+-flash$/.test(n));
+  ok.sort((a, b) => parseFloat(b.split('-')[1]) - parseFloat(a.split('-')[1]));
+  return ok[0] || null;
+}
+async function gemini(parts, maxTokens = 300) {
+  maxTokens = Math.max(maxTokens, 1024);
+  try { return await llamarGemini(cfg().modelo, parts, maxTokens); }
+  catch (e) {
+    if (e.status !== 404 && e.status !== 400) throw e;
+    const nuevo = await buscarModelo().catch(() => null);
+    if (!nuevo || nuevo === cfg().modelo) throw e;
+    log('Modelo ' + cfg().modelo + ' no disponible, uso ' + nuevo);
+    localStorage.setItem('gemModelo', nuevo);
+    return await llamarGemini(nuevo, parts, maxTokens);
+  }
 }
 async function analizarImagen(dataUrl, motivo) {
   const prompt = `Eres el sistema de seguridad de una casa en Guatemala. La cámara tomó esta foto porque detectó ${motivo === 'sonido' ? 'un ruido' : 'movimiento'}.
@@ -647,7 +669,7 @@ Actions:
 If the audio is unclear or nobody is talking to you, use "nada" with "respuesta":"".`;
   let res;
   try { res = await gemini([{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: b64 } }], 400); }
-  catch (e) { log('IA voz: ' + e.message); decir(T('No pude conectarme con mi cerebro. Intenta otra vez.', 'Connection to my core failed. Try again.'), () => terminarAsistente()); return; }
+  catch (e) { log('IA voz: ' + e.message); textoOido('Error: ' + e.message.slice(0, 120)); decir(T('No pude conectarme con mi cerebro. Intenta otra vez.', 'Connection to my core failed. Try again.'), () => terminarAsistente()); return; }
 
   log('Oí: ' + (res.oido || '') + ' → ' + (res.accion || 'nada'));
   textoOido(res.oido || '');
@@ -801,7 +823,7 @@ function guardarAjustes() {
   const cambiaron = pal !== cfg().palabras;
   localStorage.setItem('asisPalabras', pal);
   localStorage.setItem('gemKey', $('aKey').value.trim());
-  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-2.5-flash');
+  localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-3.8-flash');
   localStorage.setItem('camHold', String(Math.max(10, Math.min(600, parseInt($('aHold').value) || 30))));
   if (cambiaron && NATIVO) A.palabras(pal);
 }
