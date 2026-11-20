@@ -10,6 +10,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.MutableContextWrapper;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.graphics.PixelFormat;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
@@ -284,7 +287,7 @@ public class Estacion {
     public class Puente {
 
         @JavascriptInterface public boolean nativo() { return true; }
-        @JavascriptInterface public String version() { return "3.0"; }
+        @JavascriptInterface public String version() { return "6.0"; }
         @JavascriptInterface public boolean enPrimerPlano() { return alFrente; }
         @JavascriptInterface public void alFrente() { ui.post(Estacion.this::traerAlFrente); }
 
@@ -368,6 +371,66 @@ public class Estacion {
         @JavascriptInterface public void teleVolumen(String que) { tele.volumen(que); }
         @JavascriptInterface public void teleApp(String nombre) { tele.abrirApp(nombre, null); }
         @JavascriptInterface public void teleYoutube(String idVideo) { tele.youtube(idVideo); }
+        @JavascriptInterface public void teleYoutubeBuscar(String consulta) { tele.youtubeBuscar(consulta); }
+        @JavascriptInterface public void teleProbar() { tele.probar(); }
+
+        // --- mapas y Waze ---
+        /** Ruta con el tráfico actual según Waze. Contesta en casaNativo.ruta(json). */
+        @JavascriptInterface
+        public void wazeRuta(double la1, double lo1, double la2, double lo2) {
+            new Thread(() -> {
+                String r = Waze.ruta(la1, lo1, la2, lo2);
+                js("casaNativo.ruta(" + JSONObject.quote(r) + ")");
+            }).start();
+        }
+
+        /** Abre Waze manejando hacia el destino (por coordenadas o por nombre). */
+        @JavascriptInterface
+        public boolean abrirWaze(String lat, String lon, String destino) {
+            boolean coords = lat != null && !lat.isEmpty() && lon != null && !lon.isEmpty();
+            String uriApp = coords ? "waze://?ll=" + lat + "," + lon + "&navigate=yes" : "waze://?q=" + Uri.encode(destino == null ? "" : destino) + "&navigate=yes";
+            String webUrl = coords ? "https://waze.com/ul?ll=" + lat + "," + lon + "&navigate=yes" : "https://waze.com/ul?q=" + Uri.encode(destino == null ? "" : destino) + "&navigate=yes";
+            try {
+                app.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(uriApp)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return true;
+            } catch (Exception e) {
+                return abrirUrl(webUrl);
+            }
+        }
+
+        /** Última ubicación conocida del celular "lat,lon" (o "" si no hay permiso o todavía no la sabe). */
+        @JavascriptInterface
+        public String ubicacion() {
+            Context c = Estacion.this.app;
+            if (c.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && c.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return "";
+            try {
+                LocationManager lm = (LocationManager) c.getSystemService(Context.LOCATION_SERVICE);
+                if (lm == null) return "";
+                Location mejor = null;
+                for (String p : lm.getProviders(true)) {
+                    Location l = lm.getLastKnownLocation(p);
+                    if (l != null && (mejor == null || l.getTime() > mejor.getTime())) mejor = l;
+                }
+                if (mejor == null || System.currentTimeMillis() - mejor.getTime() > 6L * 3600000) pedirUbicacion(lm);
+                return mejor == null ? "" : mejor.getLatitude() + "," + mejor.getLongitude();
+            } catch (SecurityException e) { return ""; }
+        }
+
+        @SuppressWarnings("deprecation")
+        private void pedirUbicacion(LocationManager lm) {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                try {
+                    String prov = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ? LocationManager.NETWORK_PROVIDER : LocationManager.GPS_PROVIDER;
+                    lm.requestSingleUpdate(prov, new LocationListener() {
+                        @Override public void onLocationChanged(Location l) { }
+                        @Override public void onStatusChanged(String p, int s, android.os.Bundle b) { }
+                        @Override public void onProviderEnabled(String p) { }
+                        @Override public void onProviderDisabled(String p) { }
+                    }, Looper.getMainLooper());
+                } catch (Exception ignored) { }
+            });
+        }
         @JavascriptInterface public void teleTecla(String codigo) { tele.tecla(codigo); }
         @JavascriptInterface public String teleEstado() { return tele.estado(); }
 

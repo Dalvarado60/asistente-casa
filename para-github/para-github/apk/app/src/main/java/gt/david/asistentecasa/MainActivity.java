@@ -118,6 +118,14 @@ public class MainActivity extends Activity {
                     .setNegativeButton("Después", null)
                     .show();
         }
+
+        // ubicación: para calcular rutas y tráfico desde la casa (se pide una vez)
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && !sp.getBoolean("pidioUbicacion", false)) {
+            sp.edit().putBoolean("pidioUbicacion", true).apply();
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQ_PERMISOS + 1);
+        }
     }
 
     private void pantallaCompleta() {
