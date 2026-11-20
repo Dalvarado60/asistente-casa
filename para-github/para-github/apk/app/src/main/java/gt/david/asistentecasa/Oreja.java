@@ -29,6 +29,7 @@ public class Oreja {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private SpeechRecognizer sr;
     private volatile boolean escuchando = false;
+    private int reintentos = 0;
 
     public Oreja(Context ctx, Aviso aviso) {
         this.ctx = ctx.getApplicationContext();
@@ -102,11 +103,22 @@ public class Oreja {
 
         @Override public void onError(int error) {
             if (!escuchando) return;
+            // 8 = ocupado: se reinicia el reconocedor y se vuelve a intentar una vez
+            if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY && reintentos < 2) {
+                reintentos++;
+                try { sr.cancel(); sr.destroy(); } catch (Exception ignored) { }
+                sr = null;
+                escuchando = false;
+                ui.postDelayed(Oreja.this::escuchar, 600);
+                return;
+            }
+            reintentos = 0;
             escuchando = false;
             aviso.error(error);
         }
 
         @Override public void onResults(Bundle results) {
+            reintentos = 0;
             if (!escuchando) return;
             escuchando = false;
             aviso.listo(primero(results));

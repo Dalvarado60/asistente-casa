@@ -37,6 +37,7 @@ public class Voz {
             @Override public void onDone(String id) { aviso.termino(); }
             @Override @Deprecated public void onError(String id) { aviso.termino(); }
             @Override public void onError(String id, int code) { aviso.termino(); }
+            @Override public void onStop(String id, boolean interrupted) { aviso.termino(); }
         });
     }
 

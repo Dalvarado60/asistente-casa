@@ -76,6 +76,7 @@ public class Estacion {
     private Oido oido;
     private Voz voz;
     private Oreja oreja;
+    private Tele tele;
     private AudioFocusRequest enfoque;
     private WeakReference<Activity> actividad = new WeakReference<>(null);
     private boolean enVentanita = false;
@@ -157,6 +158,8 @@ public class Estacion {
             }
         });
 
+        tele = new Tele(app, json -> js("casaNativo.tele(" + JSONObject.quote(json) + ")"));
+
         web.loadUrl(URL);
     }
 
@@ -235,6 +238,7 @@ public class Estacion {
         e.oido.cerrar();
         e.oreja.cerrar();
         e.voz.cerrar();
+        e.tele.apagarTodo();
         e.soltarEnfoque();
         e.web.destroy();
         e.web = null;
@@ -346,6 +350,34 @@ public class Estacion {
         @JavascriptInterface
         public void micPausa(boolean si) {
             if (si) { oreja.cancelar(); oido.detener(); } else oido.iniciar();
+        }
+
+        /** Vigilante: si el oído quedó tapado o apagado, lo deja escuchando otra vez. */
+        @JavascriptInterface
+        public void reiniciarOido() {
+            if (oreja.escuchando()) return;
+            oido.setIgnorar(false);
+            oido.modoDespertar();
+            if (!oido.activo()) oido.iniciar();
+        }
+
+        // --- tele y red ---
+        @JavascriptInterface public void teleBuscar() { tele.buscar(); }
+        @JavascriptInterface public void teleEncender() { tele.encender(); }
+        @JavascriptInterface public void teleApagar() { tele.apagar(); }
+        @JavascriptInterface public void teleVolumen(String que) { tele.volumen(que); }
+        @JavascriptInterface public void teleApp(String nombre) { tele.abrirApp(nombre, null); }
+        @JavascriptInterface public void teleYoutube(String idVideo) { tele.youtube(idVideo); }
+        @JavascriptInterface public void teleTecla(String codigo) { tele.tecla(codigo); }
+        @JavascriptInterface public String teleEstado() { return tele.estado(); }
+
+        /** Abre un enlace en su app (por ejemplo, la ruta en Waze). */
+        @JavascriptInterface
+        public boolean abrirUrl(String url) {
+            try {
+                app.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return true;
+            } catch (Exception e) { return false; }
         }
 
         @JavascriptInterface public boolean micActivo() { return oido.activo() || oreja.escuchando(); }

@@ -34,6 +34,11 @@
     box-shadow:0 0 30px rgba(38,198,218,.25),inset 0 0 30px rgba(38,198,218,.15)}
   #panel.ver{opacity:1;transform:scale(1);pointer-events:auto}
   #panel img,#panel video{width:100%;height:100%;object-fit:cover;display:none;filter:saturate(.85) contrast(1.05)}
+  #panel iframe{width:100%;height:100%;border:0;display:none;background:#0b1a20}
+  #panelLista{display:none;position:absolute;inset:0;overflow:auto;padding:44px 16px 40px;font-size:14px}
+  #panelLista .disp{display:flex;flex-direction:column;padding:9px 12px;margin-bottom:7px;border:1px solid rgba(38,198,218,.25);border-radius:10px;background:rgba(38,198,218,.05)}
+  #panelLista .disp.tv{border-color:var(--cy2);box-shadow:0 0 12px rgba(38,198,218,.35)}
+  #panelLista .disp span{font-size:11px;color:#6fa3ad;margin-top:2px;font-family:monospace}
   #panel:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(38,198,218,.06) 0 2px,transparent 2px 4px);pointer-events:none}
   #panel .esq{position:absolute;width:26px;height:26px;border:2px solid var(--cy2);z-index:2}
   #panel .a{top:8px;left:8px;border-right:0;border-bottom:0}#panel .b{top:8px;right:8px;border-left:0;border-bottom:0}
@@ -81,7 +86,7 @@
 <div id="oido" class="holo"></div>
 <div id="respuesta" class="holo"></div>
 <video id="local" autoplay playsinline muted></video>
-<div id="panel"><img id="panelImg" alt=""><video id="panelVid" autoplay playsinline muted></video><div class="esq a"></div><div class="esq b"></div><div class="esq c"></div><div class="esq d"></div><div id="panelTxt"></div></div>
+<div id="panel"><img id="panelImg" alt=""><iframe id="panelWeb" title="mapa" allow="geolocation"></iframe><div id="panelLista"></div><video id="panelVid" autoplay playsinline muted></video><div class="esq a"></div><div class="esq b"></div><div class="esq c"></div><div class="esq d"></div><div id="panelTxt"></div></div>
 
 <div id="remoto"><video id="remVideo" autoplay playsinline></video><div class="marco"></div><div class="et">● EN LÍNEA CON DAVID</div></div>
 <audio id="remAudio" autoplay></audio>
@@ -157,7 +162,7 @@ const A = window.Android || {
   nativo: () => false, bateria: () => null, atenuar: vacio, altavoz: vacio, oidoIniciar: vacio, palabras: vacio,
   micPausa: vacio, micActivo: () => false, escucharComando: vacio, modoDespertar: vacio, tomarAudio: () => '',
   hablar: t => { try { const u = new SpeechSynthesisUtterance(t); u.lang = EN() ? 'en-US' : 'es-MX'; if (EN()) { u.pitch = 0.4; u.rate = 0.9; } u.onend = () => casaNativo.vozTermino(); speechSynthesis.speak(u); casaNativo.vozEmpezo(); } catch (e) { setTimeout(() => casaNativo.vozTermino(), 800); } },
-  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
+  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, reiniciarOido: vacio, teleBuscar: vacio, teleEncender: vacio, teleApagar: vacio, teleVolumen: vacio, teleApp: vacio, teleYoutube: vacio, teleTecla: vacio, teleEstado: () => '{}', abrirUrl: u => { window.open(u, '_blank'); return true; }, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
 };
 const NATIVO = !!(A.nativo && A.nativo());
 
@@ -732,9 +737,10 @@ function configPensar(modelo, intento) {
   if (/^gemini-[3-9]/.test(modelo)) return [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, null][intento] || null;
   return null;
 }
-async function llamarGemini(modelo, parts, maxTokens, intento = 0) {
+async function llamarGemini(modelo, parts, maxTokens, intento = 0, buscar = false) {
   const { key } = cfg();
-  const gc = { responseMimeType: 'application/json', temperature: 0.4, maxOutputTokens: maxTokens };
+  // buscar = true: Gemini consulta Google en vivo y responde en texto (la búsqueda no admite JSON forzado)
+  const gc = buscar ? { temperature: 0.4, maxOutputTokens: maxTokens } : { responseMimeType: 'application/json', temperature: 0.4, maxOutputTokens: maxTokens };
   const tc = configPensar(modelo, intento);
   if (tc) gc.thinkingConfig = tc;
   const corte = new AbortController();
@@ -744,7 +750,7 @@ async function llamarGemini(modelo, parts, maxTokens, intento = 0) {
   try {
     r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key.trim() },
-      body: JSON.stringify({ contents: [{ parts }], generationConfig: gc }), signal: corte.signal
+      body: JSON.stringify(buscar ? { contents: [{ parts }], tools: [{ google_search: {} }], generationConfig: gc } : { contents: [{ parts }], generationConfig: gc }), signal: corte.signal
     });
   } catch (e) {
     throw new Error(e.name === 'AbortError' ? 'Gemini tardó más de 30 segundos' : 'Sin internet: ' + e.message);
@@ -752,12 +758,13 @@ async function llamarGemini(modelo, parts, maxTokens, intento = 0) {
   const j = await r.json().catch(() => ({}));
   const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
   // si el modelo no acepta ese nivel de pensamiento, prueba el siguiente
-  if (r.status === 400 && tc && /think/i.test(msg) && intento < 2) return llamarGemini(modelo, parts, maxTokens, intento + 1);
+  if (r.status === 400 && tc && /think/i.test(msg) && intento < 2) return llamarGemini(modelo, parts, maxTokens, intento + 1, buscar);
   // saturado: reintenta una vez
-  if ((r.status === 503 || r.status === 500) && intento < 3) { await sleep(1200); return llamarGemini(modelo, parts, maxTokens, 3); }
+  if ((r.status === 503 || r.status === 500) && intento < 3) { await sleep(1200); return llamarGemini(modelo, parts, maxTokens, 3, buscar); }
   if (!r.ok) { const e = new Error(msg); e.status = r.status; throw e; }
   log('Gemini ' + modelo + ' respondió en ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
   const txt = (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
+  if (buscar) return txt.trim();
   return JSON.parse(txt.replace(/```json|```/g, '').trim());
 }
 // Lista los modelos "flash" que tu clave puede ver, del más nuevo al más viejo
@@ -771,10 +778,10 @@ async function modelosFlash() {
   return ok.sort((x, y) => ver(y) - ver(x));
 }
 // Si el modelo guardado no sirve (retirado, sin permiso o sin cuota), prueba los demás y se queda con el que funcione
-async function gemini(parts, maxTokens = 300) {
+async function gemini(parts, maxTokens = 300, buscar = false) {
   maxTokens = Math.max(maxTokens, 1024);
   const actual = cfg().modelo;
-  try { return await llamarGemini(actual, parts, maxTokens); }
+  try { return await llamarGemini(actual, parts, maxTokens, 0, buscar); }
   catch (e) {
     if (![400, 403, 404, 429, 503].includes(e.status)) throw e;
     let lista = [];
@@ -782,7 +789,7 @@ async function gemini(parts, maxTokens = 300) {
     let ultimo = e;
     for (const m of lista.slice(0, 4)) {
       try {
-        const res = await llamarGemini(m, parts, maxTokens);
+        const res = await llamarGemini(m, parts, maxTokens, 0, buscar);
         log('Modelo ' + actual + ' falló (' + e.status + '), ahora uso ' + m);
         localStorage.setItem('gemModelo', m);
         return res;
@@ -829,23 +836,25 @@ function historialTexto() {
 window.casaNativo = {
   nivel: db => procesarNivel(db),
   estado: s => { log('Oído: ' + s); publicarEstado(); },
-  despertar: frase => { log('Palabra: ' + frase); activarAsistente(); },
+  despertar: frase => { actividad(); log('Palabra: ' + frase); activarAsistente(); },
   comando: ms => { const b64 = A.tomarAudio(); if (b64) atenderOrden(b64, ms); else silencio(); },
   sinComando: () => silencio(),
   primerPlano: b => { enFrente = !!b; log(b ? 'App al frente' : 'App en segundo plano (sigo trabajando)'); if (b) pintarHud(); },
-  parcial: t => { if (asis === 'escuchando') textoOido(t); },
-  textoFinal: t => { if (asis !== 'escuchando') return; if (t && t.trim()) atenderTexto(t.trim()); else silencio(); },
+  parcial: t => { actividad(); if (asis === 'escuchando') textoOido(t); },
+  textoFinal: t => { actividad(); if (asis !== 'escuchando') return; if (t && t.trim()) atenderTexto(t.trim()); else silencio(); },
   textoError: c => {
+    actividad();
     if (asis !== 'escuchando') return;
     // 6 = nadie habló, 7 = no se entendió → sigue esperando; otros errores → respaldo con audio a Gemini
     if (c === 6 || c === 7) silencio();
     else { log('Voz a texto falló (' + c + '), uso el respaldo'); A.escucharComando(); }
   },
   vozEmpezo: () => { if (asis !== 'llamada') { asis = 'hablando'; etiqueta(cfg().nombre.toUpperCase()); } },
-  vozTermino: () => { const f = vozDespues; vozDespues = null; if (f) f(); }
+  vozTermino: () => { actividad(); const f = vozDespues; vozDespues = null; if (f) f(); }
 };
 
 function decir(texto, despues) {
+  actividad();
   vozDespues = despues || null;
   if (!texto) { const f = vozDespues; vozDespues = null; if (f) f(); return; }
   if (asis !== 'llamada') { asis = 'hablando'; etiqueta(cfg().nombre.toUpperCase()); }
@@ -952,6 +961,26 @@ function intentoLocal(original) {
   if (/\b(muestra|muestrame|ensename|quiero ver|pon)\b.*\b(camara|en vivo|lo que ves)\b/.test(s))
     return { accion: 'mostrar_camara', respuesta: T('Cámara en pantalla.', 'Camera on screen.') };
   if (/\b(quita|cierra|oculta|esconde)\b.*\b(foto|imagen|camara|pantalla)\b/.test(s)) return { accion: 'ocultar', respuesta: T('Listo.', 'Done.') };
+  // --- tele y red ---
+  const tele = /\b(tele|tv|television|televisor|la pantalla grande)\b/.test(s);
+  if (/\b(busca|buscar|encuentra|escanea)\b.*\b(tele|tv|television|televisor|dispositivos|aparatos)\b|\b(dispositivos|aparatos)\b.*\bconectad\w*\b|\bque hay (conectado )?en (la|el) (red|wifi)\b/.test(s))
+    return { accion: 'tv_buscar', respuesta: T('Buscando en la red…', 'Scanning the network…') };
+  if (tele && /\b(prende|enciende|prendeme|enciendeme|activa)\b/.test(s)) return { accion: 'tv_encender', respuesta: '' };
+  if (tele && /\b(apaga|apagame|apagala)\b/.test(s)) return { accion: 'tv_apagar', respuesta: '' };
+  if (tele && /\b(sube(le)?|mas volumen|mas fuerte)\b/.test(s)) return { accion: 'tv_volumen', que: 'subir', respuesta: '' };
+  if (tele && /\b(baja(le)?|menos volumen|mas bajo)\b/.test(s)) return { accion: 'tv_volumen', que: 'bajar', respuesta: '' };
+  if (tele && /\b(silencio|mute|calla)\b/.test(s)) return { accion: 'tv_volumen', que: 'silencio', respuesta: '' };
+  const yt = s.match(/\b(?:pon|ponme|busca|reproduce)\s+en\s+youtube\s+(.+)$|\b(?:pon|ponme|busca|reproduce)\b\s+(.+?)\s+en\s+youtube\b|\byoutube\b.*\b(?:pon|ponme|busca)\b\s+(.+)$|\b(?:pon|ponme)\b\s+(?:el )?video de\s+(.+)$/);
+  if (yt && (tele || /youtube/.test(s))) {
+    const crudo = yt[1] || yt[2] || yt[3] || yt[4] || '';
+    const q = crudo ? queda(crudo).replace(/\s+en (la )?(tele|tv|televisi[oó]n|televisor)\b.*$/i, '').trim() : '';
+    if (q) return { accion: 'tv_youtube', consulta: q, respuesta: T('Buscando el video…', 'Searching the video…') };
+  }
+  for (const [clave, app] of [['netflix', 'netflix'], ['prime', 'prime'], ['amazon', 'prime'], ['disney', 'disney'], ['youtube', 'youtube']]) {
+    if (new RegExp('\\b' + clave + '\\b').test(s) && (tele || /\b(abre|pon|ponme|entra|abreme)\b/.test(s)) && !/\bspotify\b/.test(s))
+      return { accion: 'tv_app', app, respuesta: '' };
+  }
+
   if (/\b(que hora|la hora|hora es|horas son)\b/.test(s)) return { accion: 'hora', respuesta: horaHablada() };
   if (/\b(que dia|que fecha|fecha de hoy|dia es hoy|a cuanto estamos)\b/.test(s))
     return { accion: 'hora', respuesta: 'Hoy es ' + new Date().toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long' }) + '.' };
@@ -967,7 +996,7 @@ function intentoLocal(original) {
   if (/\b(modo automatico|camara automatica)\b/.test(s)) return { accion: 'camara_auto', respuesta: 'Modo automático.' };
 
   const m = s.match(/\b(?:pon|ponme|ponle|pone|reproduce|reproduceme|toca|tocame|quiero (?:escuchar|oir))\s+(.+)$/);
-  if (m && !/\b(camara|foto|pantalla)\b/.test(s)) {
+  if (m && !/\b(camara|foto|pantalla|tele|tv|television|televisor)\b/.test(s)) {
     let q = queda(m[1]);
     q = q.replace(/^(?:un poco de|algo de|la musica de|la música de|musica de|música de|el album|el álbum|el disco|la cancion|la canción|canciones de|musica|música)\s*/i, '')
          .replace(/\s+(?:en|de) spotify$/i, '').trim();
@@ -992,7 +1021,15 @@ ${historialTexto()}`;
 }
 function listaAcciones() {
   return `Acciones posibles para "accion":
-- "nada": responder o platicar.
+- "nada": responder o platicar con lo que ya sabes.
+- "buscar_internet" (con "consulta"): para TODO lo que cambia con el tiempo: noticias, clima, resultados, precios, tipo de cambio, horarios de negocios, eventos, cosas recientes. Pon en "respuesta" algo corto como "Déjame buscar".
+- "trafico" (con "destino", "lat", "lon" del destino en Guatemala): cómo está el tráfico o cuánto se tarda en llegar. Se muestra el mapa de Waze con tráfico en vivo.
+- "navegar" (con "destino", "lat", "lon"): abrir la ruta en Waze para manejar.
+- "tv_buscar": buscar la tele o los dispositivos conectados a la red.
+- "tv_encender", "tv_apagar": prender o apagar la tele.
+- "tv_app" (con "app": youtube | netflix | prime | disney | spotify): abrir esa app en la tele.
+- "tv_youtube" (con "consulta"): poner un video de YouTube en la tele.
+- "tv_volumen" (con "que": subir | bajar | silencio): volumen de la tele.
 - "mostrar_foto": mostrar en tu pantalla la foto del evento o persona de la que hablan.
 - "mostrar_camara": mostrar la cámara en vivo en tu pantalla.
 - "ocultar": quitar la foto o cámara de la pantalla.
@@ -1033,7 +1070,7 @@ async function atenderTexto(texto) {
   const prompt = promptBase() + `
 ${notas.join('\n')}
 La persona acaba de decir: "${texto.replace(/"/g, "'")}"
-Responde SOLO este JSON: {"respuesta":"lo que dirás en voz alta","accion":"una de la lista","busqueda":"solo si accion es spotify","recordar":"solo si pidió que recuerdes algo"}
+Responde SOLO este JSON: {"respuesta":"lo que dirás en voz alta","accion":"una de la lista","busqueda":"si accion es spotify","consulta":"si accion es buscar_internet o tv_youtube","destino":"","lat":0,"lon":0,"app":"","que":"","recordar":"solo si pidió que recuerdes algo"}
 ${listaAcciones()}`;
   let res;
   try { res = await gemini([{ text: prompt }, ...parts], 500); }
@@ -1048,15 +1085,26 @@ function responder(res) {
   if (accion === 'hora') mostrarReloj(12000);
   if (accion === 'mostrar_foto' || accion === 'mostrar_camara' || accion === 'ocultar') ejecutarPantalla(accion);
   if (accion === 'despedida') { despedirse(res.respuesta || T('Hasta luego.', 'Goodbye.')); return; }
-  decir(res.respuesta || '', () => ejecutar(accion, res.busqueda || ''));
+  decir(res.respuesta || '', () => ejecutar(accion, res.busqueda || '', res));
 }
 
 // ================= PANTALLA: fotos y cámara en vivo =================
 let panelTimer = null;
-function ejecutarPantalla(accion) {
+function ejecutarPantalla(accion, extra = {}) {
   clearTimeout(panelTimer);
   const img = $('panelImg'), vid = $('panelVid');
   if (accion === 'ocultar') { cerrarPanel(); return; }
+  const web = $('panelWeb'), lista = $('panelLista');
+  web.style.display = 'none'; lista.style.display = 'none';
+  if (accion === 'mapa' || accion === 'lista') {
+    img.style.display = 'none'; vid.style.display = 'none'; vid.srcObject = null;
+    if (accion === 'mapa') { web.src = extra.url; web.style.display = 'block'; }
+    else { lista.innerHTML = extra.html; lista.style.display = 'block'; }
+    $('panelTxt').textContent = extra.texto || '';
+    $('panel').classList.add('ver'); document.body.classList.add('conPanel'); panelVisible = true;
+    panelTimer = setTimeout(cerrarPanel, accion === 'mapa' ? 90000 : 45000);
+    return;
+  }
   if (accion === 'mostrar_foto') {
     const ev = [...fotos].reverse().find(f => f.alerta) || fotos[fotos.length - 1];
     const src = ev ? ev.img : captura(640, 0.8);
@@ -1078,12 +1126,17 @@ function ejecutarPantalla(accion) {
 function cerrarPanel() {
   clearTimeout(panelTimer);
   $('panel').classList.remove('ver'); document.body.classList.remove('conPanel'); panelVisible = false;
-  setTimeout(() => { if (!panelVisible) { $('panelVid').srcObject = null; } }, 600);
+  setTimeout(() => { if (!panelVisible) { $('panelVid').srcObject = null; $('panelWeb').src = 'about:blank'; } }, 600);
   if (asis === 'reposo' && !enConversacion && !pc && fase !== 'negro') terminarAsistente(1500);
 }
-$('panel').addEventListener('click', e => { e.stopPropagation(); cerrarPanel(); });
+$('panel').addEventListener('click', e => { e.stopPropagation(); if ($('panelWeb').style.display !== 'block') cerrarPanel(); });
 
-function ejecutar(accion, busqueda) {
+function ejecutar(accion, busqueda, res = {}) {
+  // acciones que tardan: contestan cuando terminan
+  if (accion === 'buscar_internet') { buscarEnInternet(res.consulta || busqueda || ''); return; }
+  if (accion === 'trafico') { mostrarMapa(res); seguir('nada'); return; }
+  if (accion === 'navegar') { abrirRuta(res); return; }
+  if (accion.startsWith('tv_')) { accionTele(accion, res); return; }
   switch (accion) {
     case 'spotify': {
       const r = A.spotify(busqueda || 'música');
@@ -1104,6 +1157,100 @@ function ejecutar(accion, busqueda) {
   }
   seguir(accion);
 }
+
+// ================= INTERNET EN VIVO =================
+async function buscarEnInternet(consulta) {
+  if (!consulta) { seguir('nada'); return; }
+  const miTurno = turno;
+  asis = 'pensando'; etiqueta(T('BUSCANDO EN INTERNET', 'SEARCHING'));
+  try {
+    const d = new Date();
+    const txt = await gemini([{ text: `Eres ${cfg().nombre}, asistente de voz en San Lucas, Guatemala. Hoy es ${d.toLocaleString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
+Busca en Google y contesta en voz alta, en español de Guatemala, en máximo 3 frases cortas, sin listas, sin enlaces ni símbolos: ${consulta}` }], 600, true);
+    if (miTurno !== turno || pc) return;
+    const limpio = txt.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '').replace(/[*#_`]/g, '').replace(/https?:\/\/\S+/g, '').trim();
+    decir(limpio || T('No encontré nada sobre eso.', 'Nothing found.'), () => seguir('nada'));
+  } catch (e) {
+    if (miTurno !== turno || pc) return;
+    log('Búsqueda: ' + e.message);
+    decir(T('No pude buscar en internet ahorita.', 'Search failed.'), () => seguir('nada'));
+  }
+}
+
+// ================= TRÁFICO Y WAZE =================
+function coordenadas(res) {
+  const lat = parseFloat(res.lat), lon = parseFloat(res.lon);
+  return (isFinite(lat) && isFinite(lon) && Math.abs(lat) > 1) ? { lat, lon } : null;
+}
+function mostrarMapa(res) {
+  const c = coordenadas(res) || { lat: 14.6349, lon: -90.5069 };
+  const url = `https://embed.waze.com/iframe?zoom=13&lat=${c.lat}&lon=${c.lon}&pin=1`;
+  ejecutarPantalla('mapa', { url, texto: 'TRÁFICO EN VIVO · ' + (res.destino || 'GUATEMALA').toUpperCase() });
+}
+function abrirRuta(res) {
+  const c = coordenadas(res);
+  const url = c ? `https://waze.com/ul?ll=${c.lat},${c.lon}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(res.destino || '')}&navigate=yes`;
+  A.abrirUrl(url);
+  enConversacion = false;
+  terminarAsistente(1500);
+}
+
+// ================= TELE =================
+let teleEspera = null, teleTimer = null;
+function accionTele(accion, res) {
+  clearTimeout(teleTimer);
+  asis = 'pensando'; etiqueta('TV');
+  teleEspera = accion;
+  teleTimer = setTimeout(() => { if (teleEspera) { teleEspera = null; decir(T('La tele no respondió.', 'The TV did not respond.'), () => seguir('nada')); } }, 15000);
+  switch (accion) {
+    case 'tv_buscar': A.teleBuscar(); break;
+    case 'tv_encender': A.teleEncender(); break;
+    case 'tv_apagar': A.teleApagar(); break;
+    case 'tv_volumen': A.teleVolumen(res.que || 'subir'); break;
+    case 'tv_app': A.teleApp(res.app || 'youtube'); break;
+    case 'tv_youtube': buscarVideo(res.consulta || ''); break;
+    default: teleEspera = null; clearTimeout(teleTimer); seguir('nada');
+  }
+}
+async function buscarVideo(consulta) {
+  let id = '';
+  try {
+    const txt = await gemini([{ text: `Busca en YouTube el video más popular y relevante para: "${consulta}". Responde SOLO con la URL completa del video (youtube.com/watch?v=...).` }], 300, true);
+    const m = txt.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/);
+    if (m) id = m[1];
+  } catch (e) { log('Video: ' + e.message); }
+  A.teleYoutube(id);
+}
+casaNativo.tele = json => {
+  let r = {}; try { r = JSON.parse(json); } catch (e) {}
+  log('Tele: ' + (r.msg || json));
+  if (r.dispositivos) {
+    const lista = r.dispositivos.map(d => (d.tele ? '📺 ' : '• ') + d.nombre + ' (' + d.ip + ')').join('\n');
+    log('Dispositivos en la red:\n' + lista);
+    if (r.dispositivos.length) ejecutarPantalla('lista', { texto: 'DISPOSITIVOS EN LA RED', html: r.dispositivos.map(d => `<div class="disp${d.tele ? ' tv' : ''}"><b>${d.tele ? '📺' : '◉'} ${escaparHtml(d.nombre)}</b><span>${d.ip}${d.modelo ? ' · ' + escaparHtml(d.modelo) : ''}</span></div>`).join('') });
+  }
+  if (r.accion === 'tv' && !teleEspera) { if (r.msg) decir(r.msg, () => { if (asis === 'reposo') A.modoDespertar(); }); return; }
+  if (!teleEspera) return;
+  teleEspera = null; clearTimeout(teleTimer);
+  decir(r.msg || 'Listo.', () => seguir('nada'));
+};
+function escaparHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// ================= VIGILANTE DEL OÍDO =================
+// Si algo se traba, T-Bot se reinicia solo para no quedarse "sordo".
+let ultimaActividad = Date.now();
+function actividad() { ultimaActividad = Date.now(); }
+setInterval(() => {
+  if (!NATIVO || pc) return;
+  if (asis === 'reposo' && !enConversacion && modo !== 'privado') { try { A.reiniciarOido(); } catch (e) {} return; }
+  if (asis !== 'reposo' && asis !== 'llamada' && Date.now() - ultimaActividad > 60000) {
+    log('Me quedé trabado en "' + asis + '", me reinicio');
+    teleEspera = null; vozDespues = null; enConversacion = false;
+    try { A.callar(); } catch (e) {}
+    terminarAsistente(500);
+  }
+}, 15000);
+
 function ordenarModo(m) { update(ref(db, 'casa/control'), { modo: m, ts: Date.now() }).catch(e => log('Control: ' + e.message)); }
 
 // después de responder: sigue la conversación (salvo música o modo privado, que la cierran)
