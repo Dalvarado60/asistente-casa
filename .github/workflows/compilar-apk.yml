@@ -4,6 +4,10 @@ on:
   push:
   workflow_dispatch:
 
+# permiso para publicar la APK en "Releases" (de ahí la descarga T-Bot para actualizarse solo)
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-24.04
@@ -42,7 +46,7 @@ jobs:
             echo "KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
             echo "Llave fija OK"
           else
-            echo "::warning::La llave de Secrets no abrió (revisa KEYSTORE_PASS). Se firma con llave temporal."
+            echo "::warning::La llave de Secrets no abrió. Se firma con la llave del proyecto (apk/llave/tbot.jks)."
           fi
 
       - name: Compilar
@@ -56,3 +60,14 @@ jobs:
         with:
           name: EstacionCasa-apk
           path: para-github/para-github/apk/app/build/outputs/apk/release/*.apk
+
+      - name: Publicar para que T-Bot se actualice solo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(ls para-github/para-github/apk/app/build/outputs/apk/release/*.apk | head -1)
+          cp "$APK" T-Bot.apk
+          V=$((GITHUB_RUN_NUMBER + 100))
+          gh release create "t$V" T-Bot.apk --title "T-Bot 7.$GITHUB_RUN_NUMBER" --notes "Instala T-Bot.apk encima de la anterior. No hace falta desinstalar." --latest
+          # deja solo las últimas 3 versiones
+          gh release list --limit 50 --json tagName -q '.[].tagName' | tail -n +4 | xargs -r -n1 gh release delete --yes --cleanup-tag || true
