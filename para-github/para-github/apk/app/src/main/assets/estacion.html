@@ -80,7 +80,52 @@
   .panel button.rojo{color:var(--bad);border-color:#5a2030;background:#1a070c}
   .nota{font-size:12px;color:#5f8a94;margin-top:6px;line-height:1.45}
   .err{color:var(--bad);font-size:14px;min-height:20px;margin-top:10px}
-  #log{font-family:monospace;font-size:11px;color:#5f8a94;margin-top:16px;line-height:1.5;white-space:pre-wrap}
+  #log{font-family:monospace;font-size:11px;color:#5f8a94;margin-top:10px;line-height:1.5;white-space:pre-wrap;max-height:40vh;overflow:auto}
+
+  /* ajustes con tarjetas */
+  #ajustes{padding:0;background:radial-gradient(120% 60% at 50% -10%,#06303a 0%,#020a0e 55%,#010507 100%)}
+  #ajustes .cab{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:max(16px,env(safe-area-inset-top)) 18px 14px;background:linear-gradient(#020a0eee 70%,#020a0e00)}
+  #ajustes .cab .ojos{width:42px;height:42px;border-radius:14px;border:1px solid #1d6b78;display:flex;gap:6px;align-items:center;justify-content:center;background:#03141a;box-shadow:0 0 18px #26c6da33}
+  #ajustes .cab .ojos i{width:9px;height:14px;border-radius:4px;background:#7ff6ff;box-shadow:0 0 8px #7ff6ff}
+  #ajustes .cab h1{flex:1;margin:0}
+  #ajustes .cab small{display:block;font-family:monospace;font-size:10px;color:#4d7f88;letter-spacing:1px;margin-top:3px}
+  #ajustes .x{width:40px;height:40px;margin:0;padding:0;border-radius:50%;font-size:18px;background:#03141a}
+  #ajustes .cuerpo{padding:4px 16px 120px;display:flex;flex-direction:column;gap:14px}
+  .tarjeta{border:1px solid #0f3d47;border-radius:18px;background:linear-gradient(160deg,#04161ccc,#020c10cc);padding:16px 16px 14px;box-shadow:inset 0 1px 0 #ffffff08,0 8px 30px #0006}
+  .tarjeta h2{font-family:Orbitron,monospace;font-size:12px;letter-spacing:3px;color:var(--cy2);font-weight:500;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .tarjeta h2 .ic{font-size:16px;letter-spacing:0}
+  .tarjeta label:first-of-type{margin-top:10px}
+  .fila{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+  .fila .t{color:#cfe9ee;font-size:14px}
+  .fila .t small{display:block;color:#5f8a94;font-size:12px;margin-top:2px}
+  .valor{font-family:Orbitron,monospace;font-size:13px;color:var(--cy2);min-width:52px;text-align:right}
+  .deslizador{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .deslizador span{font-size:16px;opacity:.8}
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:34px;background:transparent;border:0;padding:0;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:8px;background:linear-gradient(90deg,#26c6da var(--p,50%),#0b2a31 var(--p,50%));box-shadow:0 0 12px #26c6da44}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;margin-top:-9px;background:#e8fdff;border:3px solid #26c6da;box-shadow:0 0 14px #7ff6ff}
+  .interruptor{position:relative;width:52px;height:30px;flex:none}
+  .interruptor input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;z-index:2}
+  .interruptor b{position:absolute;inset:0;border-radius:30px;background:#0b2a31;border:1px solid #1d6b78;transition:.25s}
+  .interruptor b:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#5f8a94;transition:.25s}
+  .interruptor input:checked+b{background:#0e7f8f}
+  .interruptor input:checked+b:after{left:25px;background:#e8fdff;box-shadow:0 0 10px #7ff6ff}
+  .opciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .opciones button{margin:0;padding:12px 8px;font-size:14px;border-radius:12px;background:#03141a;border-color:#0f3d47;color:#9fc9d1}
+  .opciones button.si{background:#06343d;border-color:#26c6da;color:#e8fdff;box-shadow:0 0 14px #26c6da33}
+  .botones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .botones button{margin:0;font-size:14px;padding:12px 8px;border-radius:12px}
+  .estadoAct{margin-top:10px;font-size:13px;color:#9fc9d1;min-height:18px}
+  .barra{height:6px;border-radius:6px;background:#0b2a31;margin-top:8px;overflow:hidden;display:none}
+  .barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,#26c6da,#7ff6ff);transition:width .3s}
+  .pie{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:12px 16px max(14px,env(safe-area-inset-bottom));background:linear-gradient(#01050700,#010507 35%);display:flex;gap:8px}
+  .pie button{margin:0}
+  .pie .pri{flex:2}
+  details.bit{margin-top:4px}
+  details.bit summary{color:#4d7f88;font-size:12px;letter-spacing:1px;font-family:monospace}
+  #volHud{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:30;font-family:Orbitron,monospace;color:var(--cy2);font-size:12px;letter-spacing:3px;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
+  #volHud .b{width:200px;height:6px;border-radius:6px;background:#0b2a31;margin-top:8px;overflow:hidden}
+  #volHud .b i{display:block;height:100%;background:linear-gradient(90deg,#26c6da,#7ff6ff);box-shadow:0 0 10px #7ff6ff}
   #login{display:none;justify-content:center}
 </style>
 </head>
@@ -110,43 +155,88 @@
 </section>
 
 <!-- AJUSTES (mantener presionada la pantalla 1.5 s) -->
+<div id="volHud"><div id="volHudTxt">VOLUMEN</div><div class="b"><i id="volHudBar"></i></div></div>
 <section id="ajustes" class="panel">
-  <h1>AJUSTES</h1>
-  <label>Nombre del asistente</label>
-  <input id="aNombre" placeholder="T-Bot">
-  <label>Personalidad</label>
-  <select id="aPerso">
-    <option value="es">🇬🇹 Español</option>
-    <option value="robot">🤖 Robot en inglés (voz grave)</option>
-  </select>
-  <label>Apariencia</label>
-  <select id="aApariencia">
-    <option value="cara">🤖 Carita con ojos</option>
-    <option value="nucleo">🔵 Núcleo de energía</option>
-  </select>
-  <label>Minutos en silencio antes de que se vaya a descansar</label>
-  <input id="aSilencio" type="number" min="1" max="60" placeholder="5">
-  <label>Palabras para despertarlo (separadas por coma)</label>
-  <input id="aPalabras" placeholder="ti bot, te bot">
-  <p class="nota">Se escriben como suenan. "T-Bot" se escucha como "ti bot", por eso hay varias formas. Si se activa solo, quita las que se parecen a palabras comunes.</p>
-  <input id="aPico" type="hidden">
-  <label>Clave de Gemini</label>
-  <input id="aKey" type="password" placeholder="AQ.… o AIza…">
-  <p class="nota">De aistudio.google.com/apikey (empieza con AQ. o AIza). Se guarda solo en este celular.</p>
-  <label>Modelo de Gemini</label>
-  <input id="aModelo" placeholder="gemini-3.6-flash">
-  <label>Apagar cámara (modo automático) después de… segundos</label>
-  <input id="aHold" type="number" min="10" max="600" placeholder="30">
-  <label>Mi casa (para rutas y tráfico)</label>
-  <input id="aCasa" placeholder="Vacío = ubicación del celular · o escribe: 14.6097, -90.6577">
-  <p class="nota">Si lo dejas vacío, T-Bot usa la ubicación del celular. También puedes poner la dirección o las coordenadas de Google Maps.</p>
-  <button id="aGuardar" class="pri">Guardar</button>
-  <button id="aTele">📺 Probar la tele</button>
-  <button id="aProbar">🎙️ Probar asistente (sin palabra)</button>
-  <button id="aSuper">🎵 Permiso para volver de Spotify</button>
-  <button id="aCerrar">Cerrar</button>
-  <button id="aSalir" class="rojo">Cerrar sesión</button>
-  <div id="log"></div>
+  <div class="cab">
+    <div class="ojos"><i></i><i></i></div>
+    <h1>AJUSTES<small id="aVersion">T-BOT</small></h1>
+    <button id="aCerrar" class="x" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="cuerpo">
+
+    <div class="tarjeta">
+      <h2><span class="ic">🔊</span>VOLUMEN</h2>
+      <div class="fila"><div class="t">Volumen de T-Bot</div><div class="valor" id="aVolTxt">—</div></div>
+      <div class="deslizador"><span>🔈</span><input id="aVol" type="range" min="0" max="15" step="1"><span>🔊</span></div>
+      <div class="fila"><div class="t">Refuerzo de voz<small>Más fuerte que el máximo del celular</small></div><div class="valor" id="aRefTxt">NO</div></div>
+      <div class="deslizador"><span>🎙️</span><input id="aRef" type="range" min="0" max="10" step="1"><span>💥</span></div>
+      <div class="fila"><div class="t">Recordar este volumen<small>Lo vuelve a poner cada vez que despierta</small></div><label class="interruptor"><input id="aVolFijo" type="checkbox"><b></b></label></div>
+      <button id="aVozPrueba">🔈 Probar cómo suena</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">🤖</span>ASISTENTE</h2>
+      <label>Nombre</label>
+      <input id="aNombre" placeholder="T-Bot">
+      <label>Apariencia</label>
+      <div class="opciones" id="aApOpc"><button data-v="cara">🤖 Carita</button><button data-v="nucleo">🔵 Núcleo</button></div>
+      <input id="aApariencia" type="hidden">
+      <label>Voz</label>
+      <div class="opciones" id="aPerOpc"><button data-v="es">🇬🇹 Español</button><button data-v="robot">🤖 Robot inglés</button></div>
+      <input id="aPerso" type="hidden">
+      <label>Se va a descansar después de… (minutos en silencio)</label>
+      <input id="aSilencio" type="number" min="1" max="60" placeholder="5">
+      <label>Palabras para despertarlo</label>
+      <input id="aPalabras" placeholder="ti bot, te bot">
+      <p class="nota">Como suenan, separadas por coma. Si se activa solo, quita las que se parecen a palabras comunes.</p>
+      <input id="aPico" type="hidden">
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">🧠</span>CEREBRO</h2>
+      <label>Clave de Gemini</label>
+      <input id="aKey" type="password" placeholder="AQ.… o AIza…">
+      <label>Modelo</label>
+      <input id="aModelo" placeholder="gemini-3.6-flash">
+      <p class="nota">La clave es de aistudio.google.com/apikey y se guarda solo en este celular.</p>
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">📷</span>CÁMARA Y CASA</h2>
+      <label>Apagar la cámara (modo automático) después de… segundos</label>
+      <input id="aHold" type="number" min="10" max="600" placeholder="30">
+      <label>Mi casa (para rutas y tráfico)</label>
+      <input id="aCasa" placeholder="Vacío = ubicación del celular">
+      <p class="nota">También sirve una dirección o coordenadas de Google Maps, por ejemplo 14.6097, -90.6577.</p>
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">🛠️</span>PRUEBAS</h2>
+      <div class="botones">
+        <button id="aProbar">🎙️ Hablar con T-Bot</button>
+        <button id="aTele">📺 Probar la tele</button>
+      </div>
+      <button id="aSuper">🎵 Permiso para volver de Spotify</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">⬆️</span>ACTUALIZAR</h2>
+      <div class="fila"><div class="t">Versión instalada<small id="aFirma">—</small></div><div class="valor" id="aVerTxt">—</div></div>
+      <button id="aActualizar" class="pri">Buscar versión nueva</button>
+      <div class="barra" id="aBarra"><i></i></div>
+      <div class="estadoAct" id="aActEstado"></div>
+      <p class="nota">Se instala encima, sin desinstalar ni perder tus ajustes. La primera vez Android te pide "Permitir de esta fuente".</p>
+    </div>
+
+    <div class="tarjeta">
+      <h2><span class="ic">📜</span>SISTEMA</h2>
+      <details class="bit"><summary>Ver registro (para revisar fallas)</summary><div id="log"></div></details>
+      <button id="aSalir" class="rojo">Cerrar sesión</button>
+    </div>
+  </div>
+  <div class="pie">
+    <button id="aGuardar" class="pri">Guardar</button>
+  </div>
 </section>
 
 <script type="module">
@@ -173,7 +263,7 @@ const A = window.Android || {
   nativo: () => false, bateria: () => null, atenuar: vacio, altavoz: vacio, oidoIniciar: vacio, palabras: vacio,
   micPausa: vacio, micActivo: () => false, escucharComando: vacio, modoDespertar: vacio, tomarAudio: () => '',
   hablar: t => { try { const u = new SpeechSynthesisUtterance(t); u.lang = EN() ? 'en-US' : 'es-MX'; if (EN()) { u.pitch = 0.4; u.rate = 0.9; } u.onend = () => casaNativo.vozTermino(); speechSynthesis.speak(u); casaNativo.vozEmpezo(); } catch (e) { setTimeout(() => casaNativo.vozTermino(), 800); } },
-  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, reiniciarOido: vacio, teleBuscar: vacio, teleEncender: vacio, teleApagar: vacio, teleVolumen: vacio, teleApp: vacio, teleYoutube: vacio, teleYoutubeBuscar: vacio, teleProbar: vacio, teleTecla: vacio, wazeRuta: () => setTimeout(() => casaNativo.ruta('{"ok":false,"error":"web"}'), 50), abrirWaze: (la, lo, q) => { window.open(la ? `https://waze.com/ul?ll=${la},${lo}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes`, '_blank'); return true; }, ubicacion: () => '', teleEstado: () => '{}', abrirUrl: u => { window.open(u, '_blank'); return true; }, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
+  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, reiniciarOido: vacio, teleBuscar: vacio, teleEncender: vacio, teleApagar: vacio, teleVolumen: vacio, teleApp: vacio, teleYoutube: vacio, teleYoutubeBuscar: vacio, teleProbar: vacio, teleTecla: vacio, wazeRuta: () => setTimeout(() => casaNativo.ruta('{"ok":false,"error":"web"}'), 50), abrirWaze: (la, lo, q) => { window.open(la ? `https://waze.com/ul?ll=${la},${lo}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes`, '_blank'); return true; }, ubicacion: () => '', volumenInfo: () => '{"actual":10,"max":15}', fijarVolumen: vacio, vozVolumen: vacio, versionInfo: () => '{"version":"web","firma":""}', buscarActualizacion: () => setTimeout(() => casaNativo.actualizacion('{"estado":"error","msg":"Solo funciona dentro de la APK."}'), 300), teleEstado: () => '{}', abrirUrl: u => { window.open(u, '_blank'); return true; }, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
 };
 const NATIVO = !!(A.nativo && A.nativo());
 
@@ -193,7 +283,7 @@ const cfg = () => ({
 });
 const EN = () => cfg().perso === 'robot';
 const T = (es, en) => EN() ? en : es;
-function aplicarVoz() { try { if (EN()) A.vozConfig('en', 0.55, 0.92); else A.vozConfig('es', 0.95, 1.02); } catch (e) {} }
+function aplicarVoz() { try { if (EN()) A.vozConfig('en', 0.55, 0.92); else A.vozConfig('es', 0.95, 1.02); } catch (e) {} aplicarVolumenVoz(); }
 
 const lineas = [];
 function log(t) {
@@ -891,6 +981,7 @@ function activarAsistente() {
   clearTimeout(apagarTimer);
   const yaEstaba = enConversacion && fase !== 'negro';
   enConversacion = true; silencioDesde = Date.now();
+  asegurarVolumen();
   despertarNucleo();
   pintarHud();
   A.enfoque(true);
@@ -1011,6 +1102,10 @@ function intentoLocal(original) {
   if (/\b(pausa|pausar|pausala|deten|detener|para la musica|quita la musica|apaga la musica|silencio)\b/.test(s)) return { accion: 'pausa', respuesta: 'Listo.' };
   if (/\b(siguiente|otra cancion|cambia(la)? de cancion|salta(la)?|adelanta)\b/.test(s)) return { accion: 'siguiente', respuesta: 'Siguiente.' };
   if (/\b(anterior|la de antes|regresa la cancion|cancion anterior)\b/.test(s)) return { accion: 'anterior', respuesta: 'La anterior.' };
+  if (/\b(actualizate|actualizar(te)?|busca (una )?actualizacion|hay (una )?(actualizacion|version nueva)|version nueva)\b/.test(s)) return { accion: 'actualizar', respuesta: T('Voy a buscar si hay una versión nueva.', 'Checking for updates.') };
+  if (/\bvolumen\b.*\b(al )?(maximo|todo|tope)\b|\b(a todo volumen|al maximo)\b/.test(s)) return { accion: 'volumen_nivel', nivel: 10, respuesta: 'Volumen al máximo.' };
+  const volN = s.match(/\bvolumen (?:al |a |en )?(\d{1,3})\b/);
+  if (volN) { const n = +volN[1]; return { accion: 'volumen_nivel', nivel: n > 10 ? n / 10 : n, respuesta: 'Listo.' }; }
   if (/\b(sube(le)?|subir|mas fuerte|mas volumen|mas alto)\b/.test(s) && !/\bcamara\b/.test(s)) return { accion: 'subir_volumen', respuesta: 'Subiendo.' };
   if (/\b(baja(le)?|bajar|mas bajo|menos volumen|mas despacio|mas quedito)\b/.test(s) && !/\bcamara\b/.test(s)) return { accion: 'bajar_volumen', respuesta: 'Bajando.' };
   if (/\b(continua|reanuda|sigue la musica|dale play|play)\b/.test(s)) return { accion: 'reanudar', respuesta: 'Continuando.' };
@@ -1058,7 +1153,9 @@ function listaAcciones() {
 - "mostrar_foto": mostrar en tu pantalla la foto del evento o persona de la que hablan.
 - "mostrar_camara": mostrar la cámara en vivo en tu pantalla.
 - "ocultar": quitar la foto o cámara de la pantalla.
-- "spotify" (con "busqueda"), "pausa", "reanudar", "siguiente", "anterior", "subir_volumen", "bajar_volumen": música.
+- "spotify" (con "busqueda"), "pausa", "reanudar", "siguiente", "anterior", "subir_volumen", "bajar_volumen": volumen del celular (música y voz de T-Bot).
+- "volumen_nivel" (con "nivel" de 0 a 10): poner el volumen en un nivel exacto.
+- "actualizar": buscar e instalar una versión nueva de T-Bot.
 - "hora": la hora o fecha.
 - "camara_auto", "camara_siempre", "camara_apagada", "privado": vigilancia de la casa.
 - "despedida": la persona se despide o te dice que descanses.
@@ -1177,6 +1274,7 @@ $('panelBtns').addEventListener('click', e => {
 function ejecutar(accion, busqueda, res = {}) {
   // acciones que tardan: contestan cuando terminan
   if (accion === 'buscar_internet') { buscarEnInternet(res.consulta || busqueda || ''); return; }
+  if (accion === 'actualizar') { actPorVoz = true; asis = 'pensando'; etiqueta('ACTUALIZANDO'); A.buscarActualizacion(true); return; }
   if (accion === 'trafico') { if ((res.destino || '').trim()) mostrarRuta(res); else traficoCasa(); return; }
   if (accion === 'navegar') {
     if ((res.destino || '').trim()) mostrarRuta(res, true);
@@ -1195,8 +1293,9 @@ function ejecutar(accion, busqueda, res = {}) {
     case 'reanudar': A.media('reanudar'); break;
     case 'siguiente': A.media('siguiente'); break;
     case 'anterior': A.media('anterior'); break;
-    case 'subir_volumen': A.media('subir'); break;
-    case 'bajar_volumen': A.media('bajar'); break;
+    case 'subir_volumen': cambiarVolumen('subir'); break;
+    case 'bajar_volumen': cambiarVolumen('bajar'); break;
+    case 'volumen_nivel': cambiarVolumen('nivel', Math.max(0, Math.min(10, +res.nivel || 5))); break;
     case 'camara_auto': ordenarModo('auto'); break;
     case 'camara_siempre': ordenarModo('on'); break;
     case 'camara_apagada': ordenarModo('off'); break;
@@ -1596,11 +1695,51 @@ function cerrarLlamada(borrar) {
 }
 
 // ================= AJUSTES =================
+function pintarDeslizador(el) {
+  const p = ((el.value - el.min) / ((el.max - el.min) || 1)) * 100;
+  el.style.setProperty('--p', p + '%');
+}
+function volumenActual() { try { return JSON.parse(A.volumenInfo()); } catch (e) { return { actual: 10, max: 15 }; } }
+function textoRefuerzo(v) { return +v === 0 ? 'NO' : '+' + (v * 1.5).toFixed(v % 2 ? 1 : 0) + ' dB'; }
+function marcarOpcion(caja, valor) { $(caja).querySelectorAll('button').forEach(b => b.classList.toggle('si', b.dataset.v === valor)); }
+function aplicarVolumenVoz() { try { A.vozVolumen(1, parseInt(localStorage.getItem('vozRefuerzo') || '0')); } catch (e) {} }
+/** Al despertar: si "recordar volumen" está activo, lo regresa a su nivel. */
+function asegurarVolumen() {
+  if (localStorage.getItem('volFijo') !== '1') return;
+  const v = parseInt(localStorage.getItem('volNivel'));
+  if (isFinite(v) && volumenActual().actual !== v) A.fijarVolumen(v);
+}
+function mostrarVolHud(nivel, max) {
+  const h = $('volHud');
+  $('volHudTxt').textContent = 'VOLUMEN ' + Math.round(nivel / max * 100) + '%';
+  $('volHudBar').style.width = (nivel / max * 100) + '%';
+  h.style.opacity = 1; clearTimeout(mostrarVolHud.t); mostrarVolHud.t = setTimeout(() => h.style.opacity = 0, 1800);
+}
+function cambiarVolumen(que, nivel) {
+  const v = volumenActual();
+  let n = que === 'max' ? v.max : que === 'nivel' ? Math.round(v.max * nivel / 10) : v.actual + (que === 'subir' ? 2 : -2);
+  n = Math.max(0, Math.min(v.max, n));
+  A.fijarVolumen(n);
+  if (localStorage.getItem('volFijo') === '1') localStorage.setItem('volNivel', String(n));
+  mostrarVolHud(n, v.max);
+}
+
 function abrirAjustes() {
   const c = cfg();
   $('aNombre').value = c.nombre; $('aPerso').value = c.perso; $('aPico').value = c.pico; $('aApariencia').value = apariencia; $('aSilencio').value = c.silencioMin; $('aPalabras').value = c.palabras; $('aKey').value = c.key; $('aModelo').value = c.modelo; $('aHold').value = c.hold / 1000; $('aCasa').value = localStorage.getItem('miCasa') || '';
+  marcarOpcion('aApOpc', apariencia); marcarOpcion('aPerOpc', c.perso);
+  const v = volumenActual();
+  $('aVol').max = v.max; $('aVol').value = v.actual; $('aVolTxt').textContent = Math.round(v.actual / v.max * 100) + '%'; pintarDeslizador($('aVol'));
+  const ref = parseInt(localStorage.getItem('vozRefuerzo') || '0');
+  $('aRef').value = ref; $('aRefTxt').textContent = textoRefuerzo(ref); pintarDeslizador($('aRef'));
+  $('aVolFijo').checked = localStorage.getItem('volFijo') === '1';
+  let info = {}; try { info = JSON.parse(A.versionInfo()); } catch (e) {}
+  $('aVerTxt').textContent = info.version || '—';
+  $('aVersion').textContent = 'T-BOT ' + (info.version || '') + ' · ' + (auth.currentUser?.email || '');
+  $('aFirma').textContent = info.firma ? 'Firma ' + info.firma : '';
   $('aSuper').textContent = A.puedeSuperponer() ? '🎵 Permiso de Spotify: listo ✓' : '🎵 Dar permiso para volver de Spotify';
-  $('log').textContent = 'Cuenta: ' + (auth.currentUser?.email || '') + '\n' + lineas.join('\n');
+  $('log').textContent = lineas.join('\n');
+  $('ajustes').scrollTop = 0;
   $('ajustes').style.display = 'flex';
   try { A.atenuar(false); } catch (e) {}
 }
@@ -1619,10 +1758,20 @@ function guardarAjustes() {
   localStorage.setItem('gemModelo', $('aModelo').value.trim() || 'gemini-3.6-flash');
   localStorage.setItem('miCasa', $('aCasa').value.trim()); casaCache = null;
   localStorage.setItem('camHold', String(Math.max(10, Math.min(600, parseInt($('aHold').value) || 30))));
+  localStorage.setItem('vozRefuerzo', String($('aRef').value));
+  localStorage.setItem('volFijo', $('aVolFijo').checked ? '1' : '0');
+  localStorage.setItem('volNivel', String($('aVol').value));
+  aplicarVolumenVoz();
   if (cambiaron && NATIVO) A.palabras(pal);
 }
-$('aGuardar').onclick = () => { guardarAjustes(); $('ajustes').style.display = 'none'; log('Ajustes guardados'); publicarEstado(); if (fase === 'negro') A.atenuar(true); };
-$('aCerrar').onclick = () => { $('ajustes').style.display = 'none'; if (fase === 'negro') A.atenuar(true); };
+function cerrarAjustes() { $('ajustes').style.display = 'none'; if (fase === 'negro') A.atenuar(true); }
+$('aApOpc').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('aApariencia').value = b.dataset.v; marcarOpcion('aApOpc', b.dataset.v); };
+$('aPerOpc').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('aPerso').value = b.dataset.v; marcarOpcion('aPerOpc', b.dataset.v); };
+$('aVol').oninput = e => { const el = e.target; pintarDeslizador(el); $('aVolTxt').textContent = Math.round(el.value / el.max * 100) + '%'; A.fijarVolumen(parseInt(el.value)); };
+$('aRef').oninput = e => { const el = e.target; pintarDeslizador(el); $('aRefTxt').textContent = textoRefuerzo(el.value); A.vozVolumen(1, parseInt(el.value)); };
+$('aVozPrueba').onclick = () => { A.vozVolumen(1, parseInt($('aRef').value)); A.hablar(T('Hola, así se escucha mi voz.', 'Hello, this is how I sound.')); };
+$('aGuardar').onclick = () => { guardarAjustes(); cerrarAjustes(); log('Ajustes guardados'); publicarEstado(); };
+$('aCerrar').onclick = () => { aplicarVolumenVoz(); cerrarAjustes(); };
 $('aProbar').onclick = () => { guardarAjustes(); $('ajustes').style.display = 'none'; activarAsistente(); };
 $('aSuper').onclick = () => A.pedirSuperposicion();
 $('aTele').onclick = () => {
@@ -1630,6 +1779,22 @@ $('aTele').onclick = () => {
   clearTimeout(apagarTimer); enConversacion = true; silencioDesde = Date.now();
   despertarNucleo(); pintarHud(); A.enfoque(true);
   setTimeout(() => atenderTexto('prueba la tele'), 1500);
+};
+$('aActualizar').onclick = () => { actPorVoz = false; $('aActEstado').textContent = 'Buscando…'; A.buscarActualizacion(true); };
+
+// respuestas del actualizador (Java)
+let actPorVoz = false;
+casaNativo.actualizacion = json => {
+  let r = {}; try { r = JSON.parse(json); } catch (e) {}
+  log('Actualizar: ' + (r.msg || json));
+  $('aActEstado').textContent = r.msg || '';
+  const barra = $('aBarra');
+  barra.style.display = r.estado === 'bajando' || r.estado === 'instalando' ? 'block' : 'none';
+  if (r.pct >= 0) barra.firstElementChild.style.width = r.pct + '%';
+  if (actPorVoz && ['al-dia', 'hay', 'nada', 'error', 'permiso', 'instalando', 'ocupado'].includes(r.estado)) {
+    actPorVoz = false;
+    decir(r.msg, () => { if (r.estado === 'instalando') { enConversacion = false; terminarAsistente(1500); } else seguir('nada'); });
+  }
 };
 $('aSalir').onclick = async () => { await update(ref(db, 'casa/estado'), { online: false }).catch(() => {}); await signOut(auth); location.reload(); };
 </script>

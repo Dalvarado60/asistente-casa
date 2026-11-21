@@ -80,6 +80,7 @@ public class Estacion {
     private Voz voz;
     private Oreja oreja;
     private Tele tele;
+    private Actualizador actualizador;
     private AudioFocusRequest enfoque;
     private WeakReference<Activity> actividad = new WeakReference<>(null);
     private boolean enVentanita = false;
@@ -162,6 +163,7 @@ public class Estacion {
         });
 
         tele = new Tele(app, json -> js("casaNativo.tele(" + JSONObject.quote(json) + ")"));
+        actualizador = new Actualizador(app, json -> js("casaNativo.actualizacion && casaNativo.actualizacion(" + JSONObject.quote(json) + ")"));
 
         web.loadUrl(URL);
     }
@@ -287,7 +289,7 @@ public class Estacion {
     public class Puente {
 
         @JavascriptInterface public boolean nativo() { return true; }
-        @JavascriptInterface public String version() { return "6.0"; }
+        @JavascriptInterface public String version() { return "7.0"; }
         @JavascriptInterface public boolean enPrimerPlano() { return alFrente; }
         @JavascriptInterface public void alFrente() { ui.post(Estacion.this::traerAlFrente); }
 
@@ -471,6 +473,30 @@ public class Estacion {
 
         @JavascriptInterface public void callar() { voz.callar(); }
         @JavascriptInterface public void vozConfig(String idioma, float tono, float velocidad) { voz.configurar(idioma, tono, velocidad); }
+
+        // --- volumen ---
+        /** {"actual":8,"max":15} del volumen multimedia (el que usa la voz de T-Bot). */
+        @JavascriptInterface
+        public String volumenInfo() {
+            AudioManager a = am();
+            if (a == null) return "{\"actual\":0,\"max\":15}";
+            return "{\"actual\":" + a.getStreamVolume(AudioManager.STREAM_MUSIC) + ",\"max\":" + a.getStreamMaxVolume(AudioManager.STREAM_MUSIC) + "}";
+        }
+
+        @JavascriptInterface
+        public void fijarVolumen(int nivel) {
+            AudioManager a = am();
+            if (a == null) return;
+            int max = a.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+            try { a.setStreamVolume(AudioManager.STREAM_MUSIC, Math.max(0, Math.min(max, nivel)), 0); } catch (Exception ignored) { }
+        }
+
+        /** volumen 0.1–1 de la voz y refuerzo 0–10 (más fuerte que el máximo del celular). */
+        @JavascriptInterface public void vozVolumen(float volumen, int refuerzo) { voz.setVolumen(volumen); voz.setRefuerzo(refuerzo); }
+
+        // --- actualizaciones ---
+        @JavascriptInterface public String versionInfo() { return Actualizador.info(app); }
+        @JavascriptInterface public void buscarActualizacion(boolean instalar) { actualizador.revisar(instalar); }
         @JavascriptInterface public void enfoque(boolean si) { if (si) pedirEnfoque(); else soltarEnfoque(); }
 
         // --- música ---
