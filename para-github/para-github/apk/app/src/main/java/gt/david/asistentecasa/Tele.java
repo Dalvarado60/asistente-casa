@@ -100,6 +100,9 @@ public class Tele {
     private volatile JSONArray appsTele;
     private volatile long appsHora = 0;
     private volatile String respuestaLanzar = "";
+    private volatile boolean imeActivo = false;            // la tele tiene un teclado abierto (caja de búsqueda)
+    private final List<String> ultimosVideos = new ArrayList<>();
+    private int videoActual = 0;
     private final StringBuilder bitacora = new StringBuilder();
 
     public Tele(Context c, Aviso a) {
@@ -175,6 +178,9 @@ public class Tele {
             responder("tv_buscar", tele, msg, lista);
         });
     }
+
+    /** Para el escáner de red: lo que anuncian los aparatos (nombre, fabricante, modelo). */
+    public JSONArray descubrirLista() { return descubrir(); }
 
     /** Anuncio SSDP en la red. Guarda IP, nombre, MAC y la dirección DIAL de la tele. */
     private JSONArray descubrir() {
@@ -425,6 +431,24 @@ public class Tele {
         hilo.execute(() -> abrirAppAhora(nombre == null ? "" : nombre.toLowerCase(Locale.ROOT), "tv_app", null));
     }
 
+    /** Números de la app: primero los que la tele dice tener instalados, luego los conocidos. */
+    private List<String> idsDe(String clave) {
+        List<String> ids = new ArrayList<>();
+        if (listo) {
+            JSONArray inst = appsInstaladas();
+            String[] pal = PALABRAS.get(clave);
+            if (inst != null && pal != null) for (int i = 0; i < inst.length(); i++) {
+                JSONObject a = inst.optJSONObject(i);
+                if (a == null) continue;
+                String n = a.optString("name").toLowerCase(Locale.ROOT);
+                for (String p : pal) if (n.contains(p) && !ids.contains(a.optString("appId"))) ids.add(a.optString("appId"));
+            }
+        }
+        String[] fijos = APPS.get(clave);
+        if (fijos != null) for (String f : fijos) if (!ids.contains(f)) ids.add(f);
+        return ids;
+    }
+
     /** Devuelve true si la abrió. Si msgOk es null usa el mensaje normal. */
     private boolean abrirAppAhora(String clave, String accion, String msgOk) {
         String[] fijos = APPS.get(clave);
@@ -556,6 +580,54 @@ public class Tele {
     }
 
     // =====================================================================
+    // Netflix: abrir una película o serie directo (número de netflix.com/title/...)
+    // =====================================================================
+    public void netflix(String titulo) {
+        hilo.execute(() -> {
+            String ip = teleLista("tv_netflix");
+            if (ip == null) return;
+            String id = titulo == null ? "" : titulo.replaceAll("[^0-9]", "");
+            if (id.isEmpty()) { abrirAppAhora("netflix", "tv_netflix", null); return; }
+            anotar("Netflix título " + id);
+            if ("ok".equals(conectar(35))) {
+                for (String appId : idsDe("netflix")) {
+                    String r = lanzarWs(appId, "m=" + id + "&", "DEEP_LINK");
+                    anotar("  WebSocket Netflix " + appId + " → " + (r.isEmpty() ? "sin respuesta" : r));
+                    if (r.contains("404")) continue;
+                    if (r.contains("200")) { responder("tv_netflix", true, "Listo, abriendo eso en Netflix.", null); return; }
+                }
+            }
+            if (dial(ip, "Netflix", "m=https://www.netflix.com/title/" + id + "&source_type=4")) {
+                responder("tv_netflix", true, "Listo, abriendo eso en Netflix.", null);
+                return;
+            }
+            abrirAppAhora("netflix", "tv_netflix", "Abrí Netflix, pero no pude ir directo a esa película. Búscala con el control o dime: escribe, y el nombre.");
+        });
+    }
+
+    // =====================================================================
+    // Escribir en la tele (cuando hay una caja de búsqueda abierta)
+    // =====================================================================
+    public void escribir(String texto, boolean enter) {
+        hilo.execute(() -> {
+            String c = conectar(35);
+            if (!"ok".equals(c)) { responder("tv_escribir", false, razon(c), null); return; }
+            try {
+                String b64 = Base64.encodeToString(texto.getBytes("UTF-8"), Base64.NO_WRAP);
+                JSONObject m = new JSONObject().put("method", "ms.remote.control").put("params", new JSONObject()
+                        .put("Cmd", b64).put("DataOfCmd", "base64").put("TypeOfRemote", "SendInputString"));
+                WebSocket w = ws;
+                boolean ok = w != null && w.send(m.toString());
+                anotar("Escribir \"" + texto + "\": " + (ok ? "enviado" : "no se pudo") + (imeActivo ? " (teclado abierto)" : " (no vi teclado abierto)"));
+                if (ok && w != null) w.send(new JSONObject().put("method", "ms.remote.control").put("params", new JSONObject().put("TypeOfRemote", "SendInputEnd")).toString());
+                if (ok && enter) { dormir(400); mandarTecla("KEY_ENTER"); }
+                String msg = !ok ? "La tele no recibió el texto." : imeActivo ? "Listo, lo escribí." : "Lo mandé. Si no apareció, primero abre la búsqueda en la tele y me lo vuelves a pedir.";
+                responder("tv_escribir", ok, msg, null);
+            } catch (Exception e) { responder("tv_escribir", false, "No pude escribir en la tele.", null); }
+        });
+    }
+
+    // =====================================================================
     // YouTube
     // =====================================================================
     /** Busca el video en YouTube desde el celular y lo pone en la tele. */
@@ -564,11 +636,22 @@ public class Tele {
             String ip = teleLista("tv_youtube");
             if (ip == null) return;
             String id = buscarVideo(consulta);
+            videoActual = 0;
             if (id == null) {
                 abrirAppAhora("youtube", "tv_youtube", "No encontré ese video, pero abrí YouTube en la tele.");
                 return;
             }
             ponerVideo(ip, id);
+        });
+    }
+
+    /** "Pon el siguiente": el siguiente resultado de la última búsqueda. */
+    public void youtubeSiguiente() {
+        hilo.execute(() -> {
+            if (videoActual + 1 >= ultimosVideos.size()) { responder("tv_youtube", false, "Ya no tengo más resultados de esa búsqueda. Pídeme otra.", null); return; }
+            videoActual++;
+            String ip = teleLista("tv_youtube");
+            if (ip != null) ponerVideo(ip, ultimosVideos.get(videoActual));
         });
     }
 
@@ -608,10 +691,14 @@ public class Tele {
                     .build();
             try (Response res = web.newCall(r).execute()) {
                 String html = res.body() != null ? res.body().string() : "";
+                ultimosVideos.clear();
                 Matcher m = Pattern.compile("\"videoRenderer\":\\{\"videoId\":\"([\\w-]{11})\"").matcher(html);
-                if (m.find()) { anotar("Encontré en YouTube: " + consulta); return m.group(1); }
-                m = Pattern.compile("/watch\\?v=([\\w-]{11})").matcher(html);
-                if (m.find()) return m.group(1);
+                while (m.find() && ultimosVideos.size() < 8) if (!ultimosVideos.contains(m.group(1))) ultimosVideos.add(m.group(1));
+                if (ultimosVideos.isEmpty()) {
+                    m = Pattern.compile("/watch\\?v=([\\w-]{11})").matcher(html);
+                    while (m.find() && ultimosVideos.size() < 8) if (!ultimosVideos.contains(m.group(1))) ultimosVideos.add(m.group(1));
+                }
+                if (!ultimosVideos.isEmpty()) { anotar("Encontré en YouTube: " + consulta + " (" + ultimosVideos.size() + " resultados)"); return ultimosVideos.get(0); }
                 anotar("YouTube no dio resultados (" + res.code() + ")");
             }
         } catch (Exception e) {
@@ -736,6 +823,10 @@ public class Tele {
                     respuestaLanzar = String.valueOf(j.opt("data"));
                     CountDownLatch ll = latchLanzar;
                     if (ll != null) ll.countDown();
+                } else if ("ms.remote.imeStart".equals(ev)) {
+                    imeActivo = true;
+                } else if ("ms.remote.imeEnd".equals(ev) || "ms.remote.imeDone".equals(ev)) {
+                    imeActivo = false;
                 } else if (!"ed.edenTV.update".equals(ev) && !"ms.channel.clientConnect".equals(ev) && !"ms.channel.clientDisconnect".equals(ev)) {
                     anotar("Tele dice: " + (text.length() > 140 ? text.substring(0, 140) + "…" : text));
                 }

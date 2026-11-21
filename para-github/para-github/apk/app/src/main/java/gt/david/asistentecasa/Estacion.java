@@ -177,6 +177,24 @@ public class Estacion {
 
     // ---------- dónde se muestra la página ----------
 
+    /** MainActivity avisa que el usuario contestó los permisos. */
+    void avisarPermisos() { js("casaNativo.permisos && casaNativo.permisos(" + JSONObject.quote(estadoPermisos()) + ")"); }
+
+    String estadoPermisos() {
+        boolean ubic = app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || app.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean gps = false;
+        try {
+            LocationManager lm = (LocationManager) app.getSystemService(Context.LOCATION_SERVICE);
+            gps = lm != null && (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) || lm.isProviderEnabled(LocationManager.GPS_PROVIDER));
+        } catch (Exception ignored) { }
+        try {
+            return new JSONObject().put("ubicacion", ubic).put("gps", gps).put("bluetooth", Escaner.puedeBluetooth(app))
+                    .put("superponer", Settings.canDrawOverlays(app))
+                    .put("instalar", Build.VERSION.SDK_INT < 26 || app.getPackageManager().canRequestPackageInstalls()).toString();
+        } catch (Exception e) { return "{}"; }
+    }
+
     /** La app se abrió: la página se muestra a pantalla completa. */
     void mostrarEn(Activity a) {
         actividad = new WeakReference<>(a);
@@ -289,7 +307,7 @@ public class Estacion {
     public class Puente {
 
         @JavascriptInterface public boolean nativo() { return true; }
-        @JavascriptInterface public String version() { return "7.0"; }
+        @JavascriptInterface public String version() { return "8.0"; }
         @JavascriptInterface public boolean enPrimerPlano() { return alFrente; }
         @JavascriptInterface public void alFrente() { ui.post(Estacion.this::traerAlFrente); }
 
@@ -375,6 +393,57 @@ public class Estacion {
         @JavascriptInterface public void teleYoutube(String idVideo) { tele.youtube(idVideo); }
         @JavascriptInterface public void teleYoutubeBuscar(String consulta) { tele.youtubeBuscar(consulta); }
         @JavascriptInterface public void teleProbar() { tele.probar(); }
+        @JavascriptInterface public void teleNetflix(String titulo) { tele.netflix(titulo); }
+        @JavascriptInterface public void teleEscribir(String texto, boolean enter) { tele.escribir(texto, enter); }
+        @JavascriptInterface public void teleYoutubeSiguiente() { tele.youtubeSiguiente(); }
+
+        // --- permisos ---
+        @JavascriptInterface public String permisos() { return estadoPermisos(); }
+
+        /** tipo: "opcionales" (ubicación y Bluetooth), "gps", "superponer", "instalar". */
+        @JavascriptInterface
+        public void pedirPermiso(String tipo) {
+            ui.post(() -> {
+                try {
+                    Activity a = actividad.get();
+                    if ("gps".equals(tipo)) {
+                        app.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } else if ("superponer".equals(tipo)) {
+                        app.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + app.getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } else if ("instalar".equals(tipo) && Build.VERSION.SDK_INT >= 26) {
+                        app.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + app.getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } else if ("bluetooth".equals(tipo)) {
+                        app.startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } else if (a != null) {
+                        MainActivity.pedirOpcionales(a);
+                    } else {
+                        app.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + app.getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    }
+                } catch (Exception e) { Log.w(TAG, "permiso " + tipo, e); }
+            });
+        }
+
+        // --- buscar lugares (como Waze) ---
+        @JavascriptInterface
+        public void buscarLugar(String q, double lat, double lon) {
+            new Thread(() -> js("casaNativo.lugares(" + JSONObject.quote(Waze.buscarLugar(q, lat, lon)) + ")")).start();
+        }
+
+        // --- escanear la red y el Bluetooth ---
+        @JavascriptInterface
+        public void escanear(boolean red, boolean bt) {
+            new Thread(() -> {
+                JSONObject out = new JSONObject();
+                final JSONObject[] btRes = {null};
+                Thread hiloBt = null;
+                if (bt) { hiloBt = new Thread(() -> btRes[0] = Escaner.bluetooth(app, 11)); hiloBt.start(); }
+                try {
+                    if (red) out.put("red", Escaner.red(app, tele));
+                    if (hiloBt != null) { hiloBt.join(20000); out.put("bluetooth", btRes[0] != null ? btRes[0] : new JSONObject().put("ok", false).put("error", "tiempo")); }
+                } catch (Exception e) { Log.w(TAG, "escanear", e); }
+                js("casaNativo.dispositivos(" + JSONObject.quote(out.toString()) + ")");
+            }).start();
+        }
 
         // --- mapas y Waze ---
         /** Ruta con el tráfico actual según Waze. Contesta en casaNativo.ruta(json). */
@@ -502,26 +571,56 @@ public class Estacion {
         // --- música ---
         @JavascriptInterface
         public String spotify(final String busqueda) {
+            PackageManager pm = app.getPackageManager();
+            Intent abrir = pm.getLaunchIntentForPackage("com.spotify.music");
+            if (abrir == null) return "sin-spotify";
+            final boolean estabaAlFrente = alFrente;
+            AudioManager a0 = am();
+            final boolean sonabaAntes = a0 != null && a0.isMusicActive();
+            // 1) Spotify tiene que estar abierto para aceptar "reproduce esto"
+            boolean corriendo = sonabaAntes;
+            if (!corriendo) {
+                try { app.startActivity(abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); } catch (Exception ignored) { }
+            }
+            // 2) le pide que busque y reproduzca (como lo hace el Asistente de Google)
+            ui.postDelayed(() -> reproducirEnSpotify(busqueda), corriendo ? 300 : 3500);
+            ui.postDelayed(() -> reproducirEnSpotify(busqueda), corriendo ? 3500 : 7000);
+            // 3) revisa si ya suena; si no, deja la búsqueda abierta en Spotify
+            ui.postDelayed(() -> {
+                AudioManager a = am();
+                boolean suena = a != null && a.isMusicActive();
+                if (!suena) {
+                    try {
+                        app.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + Uri.encode(busqueda)))
+                                .setPackage("com.spotify.music").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } catch (Exception ignored) { }
+                }
+                js("casaNativo.spotifyResultado && casaNativo.spotifyResultado('" + (suena ? "sonando" : "busqueda") + "')");
+                if (suena && estabaAlFrente) ui.postDelayed(Estacion.this::traerAlFrente, 1500);
+            }, corriendo ? 7500 : 11000);
+            return Settings.canDrawOverlays(app) ? "ok" : "ok-sin-permiso";
+        }
+
+        private void reproducirEnSpotify(String busqueda) {
+            AudioManager a = am();
+            if (a != null && a.isMusicActive() && !busqueda.isEmpty()) {
+                // ya suena algo: lo que pedimos o lo anterior; igual repetimos la orden una vez
+            }
             Intent i = new Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
             i.setPackage("com.spotify.music");
             i.putExtra(SearchManager.QUERY, busqueda);
+            i.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*");
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try { app.startActivity(i); } catch (Exception e) { Log.w(TAG, "spotify buscar", e); }
+        }
+
+        /** Abre algo exacto de Spotify (spotify:album:…, spotify:playlist:…, spotify:artist:…). */
+        @JavascriptInterface
+        public boolean spotifyAbrir(String uri) {
             try {
-                app.startActivity(i);
-            } catch (ActivityNotFoundException e) {
-                try {
-                    app.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + Uri.encode(busqueda))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                } catch (ActivityNotFoundException e2) {
-                    return "sin-spotify";
-                }
-            }
-            final boolean estabaAlFrente = alFrente;
-            ui.postDelayed(() -> {
-                AudioManager a = am();
-                if (a != null && !a.isMusicActive()) teclaMultimedia(KeyEvent.KEYCODE_MEDIA_PLAY);
-            }, 4500);
-            if (estabaAlFrente) ui.postDelayed(Estacion.this::traerAlFrente, 7000);
-            return Settings.canDrawOverlays(app) ? "ok" : "ok-sin-permiso";
+                app.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(uri)).setPackage("com.spotify.music").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return true;
+            } catch (Exception e) { return false; }
         }
 
         @JavascriptInterface

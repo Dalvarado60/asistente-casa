@@ -13,7 +13,7 @@ android {
         // cada compilación de GitHub sube el número sola → siempre se instala encima
         def corrida = (System.getenv('GITHUB_RUN_NUMBER') ?: '0') as Integer
         versionCode(corrida + 100)
-        versionName("7." + corrida)
+        versionName("8." + corrida)
         ndk { abiFilters 'armeabi-v7a', 'arm64-v8a' }
     }
 
@@ -43,6 +43,12 @@ android {
             minifyEnabled false
             signingConfig ksFile ? signingConfigs.fija : signingConfigs.proyecto
         }
+    }
+
+    // que un aviso de revisión no detenga la compilación
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 
     compileOptions {

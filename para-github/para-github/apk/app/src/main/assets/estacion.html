@@ -44,6 +44,8 @@
   #panelMapa .leaflet-control-attribution a{color:#4d7f88}
   #panelBtns{display:none;position:absolute;top:10px;left:40px;right:40px;z-index:1000;gap:6px;justify-content:center}
   #panelBtns button{white-space:nowrap;font-family:Orbitron,monospace;font-size:10px;letter-spacing:1px;color:var(--cy2);background:rgba(0,10,14,.85);border:1px solid var(--cy2);border-radius:8px;padding:7px 9px}
+  #panelLista .sec{font-family:Orbitron,monospace;font-size:10px;letter-spacing:2px;color:var(--cy2);margin:12px 2px 7px}
+  #panelLista .sec:first-child{margin-top:0}
   #panelLista pre{white-space:pre-wrap;font-size:11px;line-height:1.45;color:#9fd3dc;font-family:monospace}
   #panelLista .disp span{font-size:11px;color:#6fa3ad;margin-top:2px;font-family:monospace}
   #panel:after{content:"";position:absolute;inset:0;z-index:999;background:repeating-linear-gradient(0deg,rgba(38,198,218,.06) 0 2px,transparent 2px 4px);pointer-events:none}
@@ -115,6 +117,7 @@
   .opciones button.si{background:#06343d;border-color:#26c6da;color:#e8fdff;box-shadow:0 0 14px #26c6da33}
   .botones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
   .botones button{margin:0;font-size:14px;padding:12px 8px;border-radius:12px}
+  .panel button.mini{width:auto;margin:0;padding:8px 12px;font-size:13px;border-radius:10px;background:#06343d;border-color:#26c6da}
   .estadoAct{margin-top:10px;font-size:13px;color:#9fc9d1;min-height:18px}
   .barra{height:6px;border-radius:6px;background:#0b2a31;margin-top:8px;overflow:hidden;display:none}
   .barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,#26c6da,#7ff6ff);transition:width .3s}
@@ -211,6 +214,11 @@
     </div>
 
     <div class="tarjeta">
+      <h2><span class="ic">🔐</span>PERMISOS</h2>
+      <div id="aPermisos"></div>
+    </div>
+
+    <div class="tarjeta">
       <h2><span class="ic">🛠️</span>PRUEBAS</h2>
       <div class="botones">
         <button id="aProbar">🎙️ Hablar con T-Bot</button>
@@ -263,7 +271,7 @@ const A = window.Android || {
   nativo: () => false, bateria: () => null, atenuar: vacio, altavoz: vacio, oidoIniciar: vacio, palabras: vacio,
   micPausa: vacio, micActivo: () => false, escucharComando: vacio, modoDespertar: vacio, tomarAudio: () => '',
   hablar: t => { try { const u = new SpeechSynthesisUtterance(t); u.lang = EN() ? 'en-US' : 'es-MX'; if (EN()) { u.pitch = 0.4; u.rate = 0.9; } u.onend = () => casaNativo.vozTermino(); speechSynthesis.speak(u); casaNativo.vozEmpezo(); } catch (e) { setTimeout(() => casaNativo.vozTermino(), 800); } },
-  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, reiniciarOido: vacio, teleBuscar: vacio, teleEncender: vacio, teleApagar: vacio, teleVolumen: vacio, teleApp: vacio, teleYoutube: vacio, teleYoutubeBuscar: vacio, teleProbar: vacio, teleTecla: vacio, wazeRuta: () => setTimeout(() => casaNativo.ruta('{"ok":false,"error":"web"}'), 50), abrirWaze: (la, lo, q) => { window.open(la ? `https://waze.com/ul?ll=${la},${lo}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes`, '_blank'); return true; }, ubicacion: () => '', volumenInfo: () => '{"actual":10,"max":15}', fijarVolumen: vacio, vozVolumen: vacio, versionInfo: () => '{"version":"web","firma":""}', buscarActualizacion: () => setTimeout(() => casaNativo.actualizacion('{"estado":"error","msg":"Solo funciona dentro de la APK."}'), 300), teleEstado: () => '{}', abrirUrl: u => { window.open(u, '_blank'); return true; }, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
+  callar: vacio, vozConfig: vacio, enfoque: vacio, picovoice: vacio, reiniciarOido: vacio, teleBuscar: vacio, teleEncender: vacio, teleApagar: vacio, teleVolumen: vacio, teleApp: vacio, teleYoutube: vacio, teleYoutubeBuscar: vacio, teleProbar: vacio, teleTecla: vacio, wazeRuta: () => setTimeout(() => casaNativo.ruta('{"ok":false,"error":"web"}'), 50), abrirWaze: (la, lo, q) => { window.open(la ? `https://waze.com/ul?ll=${la},${lo}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes`, '_blank'); return true; }, ubicacion: () => '', permisos: () => '{"ubicacion":false,"gps":false,"bluetooth":false,"superponer":true,"instalar":false}', pedirPermiso: vacio, buscarLugar: () => setTimeout(() => casaNativo.lugares('{"ok":false}'), 50), escanear: () => setTimeout(() => casaNativo.dispositivos('{}'), 300), teleNetflix: vacio, teleEscribir: vacio, teleYoutubeSiguiente: vacio, spotifyAbrir: () => false, volumenInfo: () => '{"actual":10,"max":15}', fijarVolumen: vacio, vozVolumen: vacio, versionInfo: () => '{"version":"web","firma":""}', buscarActualizacion: () => setTimeout(() => casaNativo.actualizacion('{"estado":"error","msg":"Solo funciona dentro de la APK."}'), 300), teleEstado: () => '{}', abrirUrl: u => { window.open(u, '_blank'); return true; }, tieneOreja: () => false, escucharTexto: vacio, enPrimerPlano: () => true, alFrente: vacio, spotify: () => 'sin-spotify', media: vacio, musica: () => false, puedeSuperponer: () => true, pedirSuperposicion: vacio
 };
 const NATIVO = !!(A.nativo && A.nativo());
 
@@ -812,12 +820,16 @@ async function registrarEvento(tipo, txt, conFoto, forzar = false) {
   const datos = { t: ahora, tipo, txt }; if (img) datos.img = img;
   try { await set(r, datos); } catch (e) { log('Evento no guardado: ' + e.message); return; }
   if (img) { fotos.push({ t: ahora, img, txt }); if (fotos.length > 4) fotos.shift(); }
+  const inusual = tipo === 'movimiento' && horaInusual(ahora);
+  guardarEventoLocal({ t: ahora, tipo, txt, inusual });
+  if (inusual) { log('Movimiento a una hora poco común'); update(r, { alerta: true, txt: ('Hora poco común · ' + txt).slice(0, 300) }).catch(() => {}); }
   log(txt); ultimoTextoEvento = txt + ' a las ' + new Date().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
-  if (img && iaOn && cfg().key && ahora - ultimaIA > ESPERA_IA && asis === 'reposo' && ahora - ultimaVozAsis > 30000) {
+  if (img && iaOn && cfg().key && (ahora - ultimaIA > ESPERA_IA || inusual) && asis === 'reposo' && ahora - ultimaVozAsis > 30000) {
     ultimaIA = ahora;
     const res = await analizarImagen(img, tipo);
     if (res) {
-      update(r, { ia: String(res.resumen || '').slice(0, 390), alerta: !!res.alerta }).catch(() => {});
+      update(r, { ia: String(res.resumen || '').slice(0, 390), alerta: !!res.alerta || inusual }).catch(() => {});
+      anotarIaLocal(ahora, res.resumen, !!res.alerta);
       ultimoTextoEvento = res.resumen + (res.alerta ? ' (ALERTA)' : ''); log('IA: ' + res.resumen);
       const f = fotos.find(x => x.t === ahora); if (f) { f.ia = res.resumen; f.alerta = !!res.alerta; }
       if (res.alerta && fase !== 'negro') expresion('alerta', 4000);
@@ -920,17 +932,18 @@ let memoria = leer('tbotMem', []);           // ['dato', ...]
 function anotar(r, t) {
   if (!t) return;
   historial.push({ r, t: String(t).slice(0, 400), ts: Date.now() });
-  if (historial.length > 24) historial = historial.slice(-24);
+  if (historial.length > 60) historial = historial.slice(-60);
   localStorage.setItem('tbotHist', JSON.stringify(historial));
 }
 function recordar(dato) {
   dato = String(dato || '').trim(); if (!dato) return;
-  memoria.push(dato); if (memoria.length > 40) memoria = memoria.slice(-40);
+  if (memoria.some(m => m.toLowerCase() === dato.toLowerCase())) return;
+  memoria.push(dato); if (memoria.length > 80) memoria = memoria.slice(-80);
   localStorage.setItem('tbotMem', JSON.stringify(memoria)); log('Recordaré: ' + dato);
 }
 function historialTexto() {
-  const hace = Date.now() - 12 * 3600e3;
-  return historial.filter(h => h.ts > hace).slice(-12)
+  const hace = Date.now() - 48 * 3600e3;
+  return historial.filter(h => h.ts > hace).slice(-20)
     .map(h => (h.r === 'u' ? 'Persona' : cfg().nombre) + ' (' + new Date(h.ts).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) + '): ' + h.t).join('\n') || '(sin conversación reciente)';
 }
 
@@ -969,7 +982,9 @@ function saludo() {
   const franja = EN() ? (h < 12 ? 'Good morning' : h < 19 ? 'Good afternoon' : 'Good evening')
                       : (h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches');
   const clave = new Date().toDateString() + franja;
-  if (saludadoHoy !== clave) { saludadoHoy = clave; return franja + (EN() ? '. System online. How can I help?' : ', soy ' + cfg().nombre + '. ¿En qué te ayudo?'); }
+  const nov = novedades();
+  if (saludadoHoy !== clave) { saludadoHoy = clave; return franja + (EN() ? '. System online. How can I help?' : ', soy ' + cfg().nombre + '. ' + (nov || '¿En qué te ayudo?')); }
+  if (nov) return nov;
   const op = EN() ? ['Listening.', 'Online. Go ahead.', 'Systems ready.', 'Awaiting command.', 'I am here.']
                   : ['Te escucho.', 'Dime.', 'Aquí estoy.', '¿Sí?', 'A la orden.'];
   return op[Math.floor(Math.random() * op.length)];
@@ -1049,7 +1064,16 @@ function horaHablada(d = new Date()) {
 function intentoLocal(original) {
   const s = sinAcentos(original);
   const palabrasOriginales = original.replace(/[¿?¡!.,]/g, ' ').trim().split(/\s+/);
-  const queda = r => { const n = r.split(' ').filter(Boolean).length; return palabrasOriginales.slice(-n).join(' '); };
+  // recupera las palabras tal como se dijeron (con mayúsculas y acentos) para un pedazo del texto normalizado
+  const normales = palabrasOriginales.map(w => sinAcentos(w).replace(/[^a-z0-9ñ]/g, ''));
+  const queda = r => {
+    const p = String(r).split(' ').filter(Boolean).map(w => w.replace(/[^a-z0-9ñ]/g, ''));
+    const n = p.length;
+    for (let i = normales.length - n; i >= 0; i--) {
+      if (p.every((w, k) => normales[i + k] === w)) return palabrasOriginales.slice(i, i + n).join(' ');
+    }
+    return palabrasOriginales.slice(-n).join(' ');
+  };
 
   if (/^(adios|descansa|desconectate|apagate|duermete|vete a dormir|hasta luego|nos vemos|eso es todo|ya no|nada mas|gracias eso es todo|chao|bye)\b/.test(s) || /\b(ya puedes descansar|ya te puedes ir|desconectate)\b/.test(s))
     return { accion: 'despedida', respuesta: T('Hasta luego, David. Aquí estaré.', 'Goodbye. Standing by.') };
@@ -1063,6 +1087,12 @@ function intentoLocal(original) {
   if (/\b(muestra|muestrame|ensename|quiero ver|pon)\b.*\b(camara|en vivo|lo que ves)\b/.test(s))
     return { accion: 'mostrar_camara', respuesta: T('Cámara en pantalla.', 'Camera on screen.') };
   if (/\b(quita|cierra|oculta|esconde)\b.*\b(foto|imagen|camara|pantalla)\b/.test(s)) return { accion: 'ocultar', respuesta: T('Listo.', 'Done.') };
+  // --- memoria de la casa: qué pasó, patrones ---
+  if (/\b(que (ha )?paso|que ha pasado|que paso (hoy|ayer|en la noche|mientras)|resumen del dia|resumen de hoy|patrones|analiza (la actividad|los movimientos|lo que paso)|hubo (movimiento|alguien|algo)|novedades|que me perdi)\b/.test(s))
+    return { accion: 'patrones', respuesta: T('Déjame revisar lo que pasó.', 'Reviewing activity.') };
+  if (ofrecioResumen && Date.now() - ofrecioResumen < 120000 && /^(si|sii|dale|ok|okey|va|claro|cuentame|a ver)\b/.test(s)) { ofrecioResumen = 0; return { accion: 'patrones', respuesta: '' }; }
+  ofrecioResumen = 0;
+
   // --- rutas, tráfico y Waze ---
   const preguntoWaze = ultimaRuta && ultimaRuta.pregunta && Date.now() - ultimaRuta.t < 300000;
   if (ultimaRuta) ultimaRuta.pregunta = false;
@@ -1078,13 +1108,30 @@ function intentoLocal(original) {
   if (/\b(prueba|probar|revisa|diagnostica|checa|chequea)\b.*\b(tele|tv|television|televisor)\b|\bdiagnostico de la (tele|tv)\b/.test(s))
     return { accion: 'tv_probar', respuesta: T('Voy a revisar la tele.', 'Running TV diagnostics.') };
   const tele = /\b(tele|tv|television|televisor|la pantalla grande)\b/.test(s);
-  if (/\b(busca|buscar|encuentra|escanea)\b.*\b(tele|tv|television|televisor|dispositivos|aparatos)\b|\b(dispositivos|aparatos)\b.*\bconectad\w*\b|\bque hay (conectado )?en (la|el) (red|wifi)\b/.test(s))
-    return { accion: 'tv_buscar', respuesta: T('Buscando en la red…', 'Scanning the network…') };
+  const pideBt = /\b(bluetooth|blutu\w*|bluetu\w*)\b/.test(s);
+  if (/\b(busca|buscar|encuentra|escanea|escanear|revisa|lista|listado|muestrame|cuales|que)\b.*\b(dispositivos|aparatos|equipos|celulares)\b|\b(dispositivos|aparatos)\b.*\b(conectad\w*|red|wifi|bluetooth)\b|\bque hay (conectado )?en (la|el) (red|wifi)\b|\b(escanea|revisa) (la )?red\b/.test(s) || (pideBt && /\b(busca|escanea|que hay|cerca|lista)\b/.test(s))) {
+    const soloBt = pideBt && !/\b(red|wifi)\b/.test(s), soloRed = /\b(red|wifi)\b/.test(s) && !pideBt;
+    return { accion: 'dispositivos', red: !soloBt, bt: !soloRed, respuesta: T(soloBt ? 'Buscando por Bluetooth, dame unos segundos…' : 'Revisando la red' + (soloRed ? '' : ' y el Bluetooth') + ', dame unos segundos…', 'Scanning…') };
+  }
+  if (/\b(busca|buscar|encuentra)\b.*\b(tele|tv|television|televisor)\b/.test(s))
+    return { accion: 'tv_buscar', respuesta: T('Buscando la tele…', 'Looking for the TV…') };
   if (tele && /\b(prende|enciende|prendeme|enciendeme|activa)\b/.test(s)) return { accion: 'tv_encender', respuesta: '' };
   if (tele && /\b(apaga|apagame|apagala)\b/.test(s)) return { accion: 'tv_apagar', respuesta: '' };
   if (tele && /\b(sube(le)?|mas volumen|mas fuerte)\b/.test(s)) return { accion: 'tv_volumen', que: 'subir', respuesta: '' };
   if (tele && /\b(baja(le)?|menos volumen|mas bajo)\b/.test(s)) return { accion: 'tv_volumen', que: 'bajar', respuesta: '' };
   if (tele && /\b(silencio|mute|calla)\b/.test(s)) return { accion: 'tv_volumen', que: 'silencio', respuesta: '' };
+  // escribir en la tele (caja de búsqueda abierta)
+  const esc = s.match(/\b(?:escribe|escribeme|teclea|pon en el buscador|busca en el buscador)\s+(.+?)(?:\s+en (?:la )?(?:tele|tv|television|televisor|pantalla))?$/);
+  if (esc && (tele || /\bescribe\b/.test(s))) { const q = queda(esc[1]).replace(/\s+en (la )?(tele|tv|televisi[oó]n|televisor|pantalla)$/i, '').trim(); if (q) return { accion: 'tv_escribir', texto: q, respuesta: T('Escribiendo.', 'Typing.') }; }
+  if (/\b(siguiente|otro) video\b|\b(pon|ponme) (el )?(siguiente|otro)\b.*\b(video|youtube)\b/.test(s)) return { accion: 'tv_siguiente_video', respuesta: T('Va el siguiente.', 'Next video.') };
+  // Netflix con película o serie
+  const nf = s.match(/\bnetflix\b.*?\b(?:pon|ponme|busca|reproduce|abre|quiero ver|la pelicula|la serie)\s+(?:la pelicula |la serie |el documental )?(.+)$|\b(?:pon|ponme|busca|reproduce|quiero ver)\s+(?:la pelicula |la serie |el documental )?(.+?)\s+en\s+netflix\b/);
+  if (nf) { const q = queda(nf[1] || nf[2] || '').replace(/\s+en (la )?(tele|tv|televisi[oó]n|televisor)\b.*$/i, '').trim(); if (q && !/^(netflix|la tele|tele)$/i.test(q)) return { accion: 'tv_netflix', titulo: q, respuesta: T('Buscando ' + q + ' en Netflix…', 'Searching Netflix…') }; }
+  // teclas del control
+  if (tele || /\bcontrol\b/.test(s)) {
+    const teclas = [[/\b(arriba)\b/, 'KEY_UP'], [/\b(abajo)\b/, 'KEY_DOWN'], [/\b(izquierda)\b/, 'KEY_LEFT'], [/\b(derecha)\b/, 'KEY_RIGHT'], [/\b(ok|aceptar|entrar|selecciona|enter)\b/, 'KEY_ENTER'], [/\b(atras|regresa|regresar)\b/, 'KEY_RETURN'], [/\b(inicio|home|menu principal)\b/, 'KEY_HOME'], [/\b(pausa|pausala|pausar)\b/, 'KEY_PAUSE'], [/\b(play|reproduce|continua|dale play)\b/, 'KEY_PLAY']];
+    for (const [re, k] of teclas) if (re.test(s) && !/\b(netflix|youtube|prime|disney)\b/.test(s)) return { accion: 'tv_tecla', tecla: k, respuesta: '' };
+  }
   const yt = s.match(/\b(?:pon|ponme|busca|reproduce)\s+en\s+youtube\s+(.+)$|\b(?:pon|ponme|busca|reproduce)\b\s+(.+?)\s+en\s+youtube\b|\byoutube\b.*\b(?:pon|ponme|busca)\b\s+(.+)$|\b(?:pon|ponme)\b\s+(?:el )?video de\s+(.+)$/);
   if (yt && (tele || /youtube/.test(s))) {
     const crudo = yt[1] || yt[2] || yt[3] || yt[4] || '';
@@ -1134,7 +1181,8 @@ function promptBase() {
   return `Eres ${cfg().nombre}, el asistente con inteligencia artificial que vive en la casa de David en San Lucas, Guatemala. Ves por la cámara de la casa y escuchas por el micrófono. ${idioma}
 Fecha y hora: ${d.toLocaleString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
 Casa: vigilancia "${modo}", cámara ${camStream ? 'encendida' : 'apagada'}. Último evento: ${ultimoTextoEvento}.
-Cosas que te pidieron recordar: ${memoria.length ? memoria.map(m => '- ' + m).join('\n') : '(nada)'}
+Tu memoria (lo que sabes de la familia y la casa): ${memoria.length ? '\n' + memoria.map(m => '- ' + m).join('\n') : '(nada todavía)'}
+Actividad de la casa: ${resumenActividadCorto()}
 Conversación reciente (úsala para entender a qué se refiere la persona):
 ${historialTexto()}`;
 }
@@ -1145,7 +1193,13 @@ function listaAcciones() {
 - "trafico" (con "destino": el lugar tal como lo dijo, con municipio si lo sabes; vacío si pregunta por el tráfico en general): cómo está el tráfico o cuánto se tarda en llegar. Tú muestras la ruta con el tráfico de Waze. En "respuesta" pon algo corto como "Déjame ver la ruta", sin inventar tiempos.
 - "navegar" (con "destino"): abrir Waze para manejar hacia ese lugar.
 - "tv_probar": revisar o diagnosticar por qué la tele no obedece.
-- "tv_buscar": buscar la tele o los dispositivos conectados a la red.
+- "tv_buscar": buscar la tele.
+- "dispositivos" (con "red": true/false y "bt": true/false): buscar y listar los aparatos del wifi y/o Bluetooth.
+- "tv_netflix" (con "titulo"): poner una película o serie en Netflix en la tele.
+- "tv_escribir" (con "texto"): escribir en la caja de búsqueda que está abierta en la tele.
+- "tv_siguiente_video": poner el siguiente resultado de YouTube.
+- "tv_tecla" (con "tecla": KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER, KEY_RETURN, KEY_HOME, KEY_PLAY, KEY_PAUSE): botón del control.
+- "patrones": contar qué ha pasado en la casa, resumen del día o analizar la actividad.
 - "tv_encender", "tv_apagar": prender o apagar la tele.
 - "tv_app" (con "app": youtube | netflix | prime | disney | spotify): abrir esa app en la tele.
 - "tv_youtube" (con "consulta"): poner un video de YouTube en la tele.
@@ -1159,6 +1213,7 @@ function listaAcciones() {
 - "hora": la hora o fecha.
 - "camara_auto", "camara_siempre", "camara_apagada", "privado": vigilancia de la casa.
 - "despedida": la persona se despide o te dice que descanses.
+MEMORIA: si la persona comparte algo que vale la pena recordar a largo plazo (nombres de la familia, gustos, rutinas, horarios, planes, cosas de la casa), ponlo en "recordar" como una frase corta, aunque no te lo pida. No repitas lo que ya está en tu memoria.
 Si te piden investigar, describir o analizar a una persona o lo que pasó, usa las imágenes adjuntas y da detalles concretos (ropa, colores, complexión, qué hace, objetos), sin inventar.`;
 }
 const PIDE_IMAGEN = /\b(camara|foto|imagen|persona|sospech\w*|vestimenta|ropa|viste|quien|que ves|movimiento|alguien|investiga\w*|describe|describ\w*|mira|analiza\w*|aspecto|cara|rostro|evento|alerta|paso)\b/;
@@ -1192,7 +1247,7 @@ async function atenderTexto(texto) {
   const prompt = promptBase() + `
 ${notas.join('\n')}
 La persona acaba de decir: "${texto.replace(/"/g, "'")}"
-Responde SOLO este JSON: {"respuesta":"lo que dirás en voz alta","accion":"una de la lista","busqueda":"si accion es spotify","consulta":"si accion es buscar_internet o tv_youtube","destino":"","lat":0,"lon":0,"app":"","que":"","recordar":"solo si pidió que recuerdes algo"}
+Responde SOLO este JSON: {"respuesta":"lo que dirás en voz alta","accion":"una de la lista","busqueda":"si accion es spotify","consulta":"si accion es buscar_internet o tv_youtube","destino":"","lat":0,"lon":0,"app":"","que":"","titulo":"","texto":"","tecla":"","red":true,"bt":true,"recordar":"dato nuevo para tu memoria, o vacío"}
 ${listaAcciones()}`;
   let res;
   try { res = await gemini([{ text: prompt }, ...parts], 500); }
@@ -1274,6 +1329,8 @@ $('panelBtns').addEventListener('click', e => {
 function ejecutar(accion, busqueda, res = {}) {
   // acciones que tardan: contestan cuando terminan
   if (accion === 'buscar_internet') { buscarEnInternet(res.consulta || busqueda || ''); return; }
+  if (accion === 'dispositivos') { escanearDispositivos(res.red !== false, res.bt !== false); return; }
+  if (accion === 'patrones') { contarPatrones(); return; }
   if (accion === 'actualizar') { actPorVoz = true; asis = 'pensando'; etiqueta('ACTUALIZANDO'); A.buscarActualizacion(true); return; }
   if (accion === 'trafico') { if ((res.destino || '').trim()) mostrarRuta(res); else traficoCasa(); return; }
   if (accion === 'navegar') {
@@ -1368,12 +1425,34 @@ async function miCasa() {
     const p = String((A.ubicacion && A.ubicacion()) || '').split(',').map(Number);
     if (p.length === 2 && isFinite(p[0]) && isFinite(p[1]) && p[0] !== 0) return { lat: p[0], lon: p[1] };
   } catch (e) {}
-  return CASA_APROX;
+  return { ...CASA_APROX, aprox: true };
+}
+function problemaUbicacion() {
+  let p = {}; try { p = JSON.parse(A.permisos()); } catch (e) {}
+  if (!p.ubicacion) { A.pedirPermiso('opcionales'); return T('No tengo permiso de ubicación, así que la ruta sale desde un punto aproximado de San Lucas. Te pedí el permiso en pantalla.', ''); }
+  if (!p.gps) return T('La ubicación del celular está apagada; actívala para que la ruta salga desde la casa.', '');
+  return T('Todavía no sé dónde está el celular; la ruta sale desde un punto aproximado.', '');
 }
 
+let lugaresEspera = null;
+casaNativo.lugares = json => { let j = null; try { j = JSON.parse(json); } catch (e) {} if (lugaresEspera) lugaresEspera(j); };
+function lugaresNativo(q, cerca) {
+  return new Promise(ok => {
+    if (!NATIVO || !A.buscarLugar) { ok(null); return; }
+    const t = setTimeout(() => { lugaresEspera = null; ok(null); }, 15000);
+    lugaresEspera = j => { clearTimeout(t); lugaresEspera = null; ok(j && j.ok && j.lugares && j.lugares.length ? j.lugares : null); };
+    try { A.buscarLugar(q, cerca.lat, cerca.lon); } catch (e) { clearTimeout(t); lugaresEspera = null; ok(null); }
+  });
+}
 async function geocodificar(destino, cerca) {
   const q = destino.trim();
   if (!q) return null;
+  const nat = await lugaresNativo(q, cerca);
+  if (nat) {
+    const l = nat[0];
+    log('Lugar (' + l.fuente + '): ' + l.nombre + (l.direccion ? ' — ' + l.direccion : '') + ` (${(+l.lat).toFixed(4)}, ${(+l.lon).toFixed(4)})`);
+    return { lat: +l.lat, lon: +l.lon, nombre: l.nombre, direccion: l.direccion || '', fuente: l.fuente };
+  }
   try {
     const vb = [cerca.lon - 1.2, cerca.lat + 1.2, cerca.lon + 1.2, cerca.lat - 1.2].join(',');
     const r = await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=gt&accept-language=es&viewbox=${vb}&q=${encodeURIComponent(q)}`);
@@ -1421,8 +1500,8 @@ async function rutaOsrm(o, d) {
 function cargarLeaflet() {
   if (window.L) return Promise.resolve(true);
   if (!leafletCarga) leafletCarga = new Promise(ok => {
-    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
-    const sc = document.createElement('script'); sc.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'leaflet/leaflet.css'; document.head.appendChild(css);
+    const sc = document.createElement('script'); sc.src = 'leaflet/leaflet.js';
     sc.onload = () => ok(true); sc.onerror = () => { leafletCarga = null; ok(false); };
     document.head.appendChild(sc);
   });
@@ -1433,7 +1512,9 @@ async function dibujarRuta(o, d, r) {
   const div = $('panelMapa');
   if (!mapa) {
     mapa = L.map(div, { zoomControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' }).addTo(mapa);
+    const oscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' }).addTo(mapa);
+    let fallas = 0;
+    oscuro.on('tileerror', () => { if (++fallas === 4) { log('Mapa: CARTO no carga, uso OpenStreetMap'); mapa.removeLayer(oscuro); L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapa); } });
   }
   if (capaRuta) capaRuta.remove();
   const pts = r && r.puntos && r.puntos.length > 1 ? r.puntos : [[o.lat, o.lon], [d.lat, d.lon]];
@@ -1450,6 +1531,7 @@ async function dibujarRuta(o, d, r) {
 
 async function mostrarRuta(res, abrir = false) {
   const destino = limpiarDestino(res.destino || '');
+  if (abrir && destino) { ultimaRuta = { destino, t: Date.now() }; A.abrirWaze('', '', destino); enConversacion = false; cerrarPanel(); terminarAsistente(1500); return; }
   const miTurno = turno;
   asis = 'pensando'; etiqueta(T('BUSCANDO RUTA', 'ROUTING'));
   const o = await miCasa();
@@ -1463,6 +1545,7 @@ async function mostrarRuta(res, abrir = false) {
     return;
   }
   ultimaRuta = { o, d, destino: destino || d.nombre, t: Date.now() };
+  const dondeQueda = d.direccion ? `${d.nombre}, ${d.direccion}` : d.nombre;
   log(`Ruta: casa (${o.lat.toFixed(4)}, ${o.lon.toFixed(4)}) → ${d.nombre} (${d.lat.toFixed(4)}, ${d.lon.toFixed(4)})`);
   if (abrir) { abrirWazeDestino(); return; }
 
@@ -1472,7 +1555,7 @@ async function mostrarRuta(res, abrir = false) {
   ultimaRuta.r = r;
   const km = r ? r.km : distanciaKm(o, d);
   const nombre = destino || d.nombre;
-  ultimaRuta.texto = `${nombre.toUpperCase()} · ${km.toFixed(km < 10 ? 1 : 0)} KM` + (r ? ` · ${duracionCorta(r.min)}` + (r.fuente === 'waze' ? ' · TRÁFICO WAZE' : ' · SIN TRÁFICO') : '');
+  ultimaRuta.texto = `${dondeQueda.toUpperCase()} · ${km.toFixed(km < 10 ? 1 : 0)} KM` + (r ? ` · ${duracionCorta(r.min)}` + (r.fuente === 'waze' ? ' · TRÁFICO WAZE' : ' · SIN TRÁFICO') : '');
   ejecutarPantalla('ruta', { texto: ultimaRuta.texto });
   dibujarRuta(o, d, r).then(okMapa => { if (!okMapa) mostrarMapa({ lat: d.lat, lon: d.lon, destino: nombre, zoom: zoomPara(o, d) }); });
 
@@ -1486,6 +1569,8 @@ async function mostrarRuta(res, abrir = false) {
   } else {
     frase = `${nombre} queda a unos ${kmHablado(km)} en línea recta.`;
   }
+  if (d.direccion && sinAcentos(d.nombre).toLowerCase() !== sinAcentos(nombre).toLowerCase()) frase = `Encontré ${d.nombre}, ${d.direccion}. ` + frase;
+  if (o.aprox) frase += ' ' + problemaUbicacion();
   decir(frase + T(' ¿Te abro la ruta en Waze?', ''), () => { if (ultimaRuta) { ultimaRuta.pregunta = true; ultimaRuta.t = Date.now(); } seguir('nada'); });
 }
 
@@ -1501,7 +1586,9 @@ function mostrarMapa(res) {
 }
 function abrirWazeDestino() {
   const u = ultimaRuta;
-  if (u && u.d) A.abrirWaze(u.d.lat.toFixed(6), u.d.lon.toFixed(6), u.destino || '');
+  if (u && u.d && u.d.fuente === 'waze') A.abrirWaze(u.d.lat.toFixed(6), u.d.lon.toFixed(6), u.destino || '');
+  else if (u && u.destino) A.abrirWaze('', '', u.destino);
+  else if (u && u.d) A.abrirWaze(u.d.lat.toFixed(6), u.d.lon.toFixed(6), '');
   enConversacion = false;
   cerrarPanel();
   terminarAsistente(1500);
@@ -1522,6 +1609,10 @@ function accionTele(accion, res) {
     case 'tv_app': A.teleApp(res.app || 'youtube'); break;
     case 'tv_youtube': if (A.teleYoutubeBuscar) A.teleYoutubeBuscar(res.consulta || ''); else buscarVideo(res.consulta || ''); break;
     case 'tv_probar': A.teleProbar(); break;
+    case 'tv_netflix': netflixEnTele(res.titulo || res.consulta || ''); return;
+    case 'tv_escribir': A.teleEscribir(res.texto || res.consulta || '', true); break;
+    case 'tv_siguiente_video': A.teleYoutubeSiguiente(); break;
+    case 'tv_tecla': A.teleTecla(res.tecla || 'KEY_ENTER'); break;
     default: teleEspera = null; clearTimeout(teleTimer); seguir('nada');
   }
 }
@@ -1565,6 +1656,189 @@ casaNativo.tele = json => {
 };
 function escaparHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+// ================= DISPOSITIVOS (wifi + Bluetooth) =================
+let escaneoEspera = false;
+function tipoDe(d) {
+  const n = sinAcentos(((d.nombre || '') + ' ' + (d.fabricante || '') + ' ' + (d.modelo || '') + ' ' + (d.clase || '')).toLowerCase());
+  if (d.tipo === 'tbot') return ['🤖', 'T-Bot'];
+  if (d.tipo === 'router') return ['📶', 'Router'];
+  if (d.tele || /\b(tv|tele|television|bravia|roku|fire ?tv|chromecast|crkey)\b/.test(n)) return ['📺', 'Tele'];
+  if (/\b(iphone|galaxy|android|phone|redmi|xiaomi|moto|huawei|celular|pixel|oppo|vivo|honor)\b|^sm-/.test(n) || d.clase === 'celular') return ['📱', 'Celular'];
+  if (/\b(ipad|tab|tablet)\b/.test(n)) return ['📱', 'Tablet'];
+  if (/\b(desktop|laptop|pc|macbook|imac|windows|computadora)\b/.test(n) || d.clase === 'computadora') return ['💻', 'Computadora'];
+  if (/\b(print|hp|epson|canon|brother|impresora)\b/.test(n) || d.clase === 'impresora') return ['🖨️', 'Impresora'];
+  if (/\b(buds|airpods|jbl|bose|speaker|bocina|sound|audio|headset|audifonos|echo|alexa|sonos)\b/.test(n) || d.clase === 'audio') return ['🎧', 'Audio'];
+  if (/\b(watch|band|fit|reloj)\b/.test(n) || d.clase === 'reloj') return ['⌚', 'Reloj'];
+  if (/\b(cam|camera|ipcam|ezviz|hikvision|dahua|tapo|imou)\b/.test(n)) return ['📷', 'Cámara'];
+  if (/\b(playstation|xbox|nintendo|switch|ps4|ps5)\b/.test(n)) return ['🎮', 'Consola'];
+  return ['◉', ''];
+}
+function escanearDispositivos(red, bt) {
+  escaneoEspera = true;
+  asis = 'pensando'; etiqueta(T('ESCANEANDO', 'SCANNING'));
+  ejecutarPantalla('lista', { texto: 'ESCANEANDO…', html: '<pre>Buscando aparatos' + (red ? ' en el wifi' : '') + (red && bt ? ' y' : '') + (bt ? ' por Bluetooth' : '') + '…\nEsto tarda unos 20 segundos.</pre>', ms: 60000 });
+  clearTimeout(escanearDispositivos.t);
+  escanearDispositivos.t = setTimeout(() => { if (escaneoEspera) { escaneoEspera = false; decir(T('El escaneo tardó demasiado.', 'Scan timed out.'), () => seguir('nada')); } }, 60000);
+  try { A.escanear(red, bt); } catch (e) { escaneoEspera = false; decir('No pude escanear.', () => seguir('nada')); }
+}
+casaNativo.dispositivos = json => {
+  let r = {}; try { r = JSON.parse(json); } catch (e) {}
+  const conocidos = leer('tbotDisp', {});
+  const ahora = Date.now(), nuevos = [];
+  const marcar = (clave, d, donde) => {
+    const k = conocidos[clave];
+    const esNuevo = !k && Object.keys(conocidos).length > 0;
+    if (esNuevo) nuevos.push(d.nombre || clave);
+    conocidos[clave] = { n: d.nombre || (k && k.n) || '', d: donde, p: k ? k.p : ahora, u: ahora, v: (k ? k.v : 0) + 1 };
+    return esNuevo;
+  };
+  let html = '', partes = [];
+  const fila = (d, sub, nuevo) => { const [ic, tipo] = tipoDe(d); return `<div class="disp${d.tele ? ' tv' : ''}"><b>${ic} ${escaparHtml(d.nombre || 'Sin nombre')}${nuevo ? ' <em style="color:#ff5c8a;font-style:normal">· NUEVO</em>' : ''}</b><span>${[tipo, sub].filter(Boolean).join(' · ')}</span></div>`; };
+  if (r.red) {
+    if (r.red.ok) {
+      const ds = r.red.dispositivos || [];
+      html += `<div class="sec">📶 RED WIFI · ${ds.length}</div>` + ds.map(d => fila(d, d.ip + (d.modelo ? ' · ' + escaparHtml(d.modelo) : ''), d.tipo !== 'tbot' && marcar('ip:' + (d.nombre || d.ip), d, 'wifi'))).join('');
+      partes.push(`${ds.length} en el wifi`);
+    } else { html += `<div class="sec">📶 RED WIFI</div><pre>${escaparHtml(r.red.error || 'No pude revisar la red.')}</pre>`; }
+  }
+  if (r.bluetooth) {
+    const b = r.bluetooth;
+    if (b.ok) {
+      const ds = b.dispositivos || [];
+      html += `<div class="sec">🔵 BLUETOOTH · ${ds.length}${b.sinNombre ? ' (+' + b.sinNombre + ' sin nombre)' : ''}</div>` + ds.map(d => fila(d, (d.emparejado ? 'emparejado' : '') + (d.rssi ? (d.emparejado ? ' · ' : '') + (d.rssi > -60 ? 'muy cerca' : d.rssi > -80 ? 'cerca' : 'lejos') : ''), marcar('bt:' + d.mac, d, 'bt'))).join('');
+      partes.push(`${ds.length} por Bluetooth`);
+    } else {
+      const msg = { 'apagado': 'El Bluetooth del celular está apagado.', 'sin-permiso': 'Falta el permiso de Bluetooth (te lo pedí en pantalla).', 'sin-bluetooth': 'Este celular no tiene Bluetooth.' }[b.error] || ('Bluetooth: ' + (b.error || 'falló'));
+      if (b.error === 'sin-permiso') A.pedirPermiso('opcionales');
+      if (b.error === 'apagado') A.pedirPermiso('bluetooth');
+      html += `<div class="sec">🔵 BLUETOOTH</div><pre>${escaparHtml(msg)}</pre>`;
+      partes.push(msg);
+    }
+  }
+  localStorage.setItem('tbotDisp', JSON.stringify(conocidos));
+  log('Escaneo: ' + partes.join(', ') + (nuevos.length ? ' · nuevos: ' + nuevos.join(', ') : ''));
+  ejecutarPantalla('lista', { texto: 'DISPOSITIVOS', html, ms: 120000 });
+  if (!escaneoEspera) return;
+  escaneoEspera = false; clearTimeout(escanearDispositivos.t);
+  let frase = partes.length ? 'Encontré ' + partes.join(' y ') + '.' : 'No encontré nada.';
+  if (nuevos.length) frase += ` Hay ${nuevos.length === 1 ? 'uno nuevo que no había visto' : nuevos.length + ' nuevos que no había visto'}: ${nuevos.slice(0, 3).join(', ')}.`;
+  frase += ' Te dejo la lista en pantalla.';
+  decir(frase, () => seguir('nada'));
+};
+
+// ================= NETFLIX EN LA TELE =================
+async function netflixEnTele(titulo) {
+  const miTurno = turno;
+  asis = 'pensando'; etiqueta('NETFLIX');
+  let id = '';
+  try {
+    const txt = await gemini([{ text: `Busca en Google la página de Netflix del título "${titulo}" (película o serie). Responde SOLO con la dirección exacta de netflix.com, por ejemplo https://www.netflix.com/title/80057281` }], 300, true);
+    const m = txt.match(/netflix\.com\/(?:[a-z-]+\/)?title\/(\d{5,})/i);
+    if (m) id = m[1];
+  } catch (e) { log('Netflix: ' + e.message); }
+  if (miTurno !== turno || pc) { teleEspera = null; clearTimeout(teleTimer); return; }
+  log('Netflix "' + titulo + '": ' + (id || 'sin número'));
+  etiqueta('TV');
+  A.teleNetflix(id);
+}
+
+// ================= SPOTIFY: confirma si ya suena =================
+casaNativo.spotifyResultado = estado => {
+  log('Spotify: ' + estado);
+  if (estado === 'busqueda') { try { A.hablar(T('No arrancó solo; te dejé la búsqueda abierta en Spotify, tócale play.', 'Search is open in Spotify.')); } catch (e) {} }
+};
+
+// ================= PATRONES DE LA CASA =================
+// historial local de eventos (sobrevive a reinicios; el de Firebase se recorta)
+let ofrecioResumen = 0;
+function guardarEventoLocal(e) {
+  const h = leer('tbotEv', []); h.push(e); if (h.length > 1200) h.splice(0, h.length - 1200);
+  localStorage.setItem('tbotEv', JSON.stringify(h));
+}
+function anotarIaLocal(t, ia, alerta) {
+  const h = leer('tbotEv', []); const e = h.find(x => x.t === t);
+  if (e) { e.ia = String(ia || '').slice(0, 200); e.alerta = alerta; localStorage.setItem('tbotEv', JSON.stringify(h)); }
+}
+function estadisticas() {
+  const h = leer('tbotEv', []), ahora = Date.now(), dia = 864e5;
+  const semana = h.filter(e => ahora - e.t < 7 * dia);
+  const dias = Math.max(1, Math.min(7, Math.ceil((ahora - (semana[0] ? semana[0].t : ahora)) / dia)));
+  const porHora = new Array(24).fill(0);
+  semana.forEach(e => porHora[new Date(e.t).getHours()]++);
+  const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+  const hoy = h.filter(e => e.t >= hoy0.getTime());
+  const ayer = h.filter(e => e.t >= hoy0.getTime() - dia && e.t < hoy0.getTime());
+  const top = porHora.map((n, i) => [i, n]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+  const noche = semana.filter(e => { const hr = new Date(e.t).getHours(); return hr < 5; });
+  return { total: h.length, semana, dias, porHora, hoy, ayer, top, noche, promedio: semana.length / dias, ultimo: h[h.length - 1] };
+}
+function horaInusual(t) {
+  const h = leer('tbotEv', []), dia = 864e5;
+  if (!h.length || t - h[0].t < 3 * dia) return false;     // necesita al menos 3 días de datos
+  const hr = new Date(t).getHours();
+  const n = h.filter(e => t - e.t < 14 * dia && new Date(e.t).getHours() === hr).length;
+  const dias = Math.min(14, (t - h[0].t) / dia);
+  return n / dias < 0.15;
+}
+function horaCorta(t) { return new Date(t).toLocaleTimeString('es-GT', { hour: 'numeric', minute: '2-digit' }); }
+function resumenActividadCorto() {
+  const e = estadisticas();
+  if (!e.total) return 'sin datos todavía.';
+  return `hoy ${e.hoy.length} eventos, ayer ${e.ayer.length}, promedio ${e.promedio.toFixed(1)} por día; horas más activas: ${e.top.map(h => h + ':00').join(', ') || '—'}; último: ${e.ultimo ? (e.ultimo.ia || e.ultimo.txt) + ' a las ' + horaCorta(e.ultimo.t) : '—'}.`;
+}
+/** Lo que pasó desde la última vez que hablaron (para el saludo). */
+function novedades() {
+  if (EN()) return '';
+  const desde = parseInt(localStorage.getItem('ultimaCharla') || '0');
+  localStorage.setItem('ultimaCharla', String(Date.now()));
+  if (!desde || Date.now() - desde < 2 * 3600e3) return '';
+  const h = leer('tbotEv', []).filter(e => e.t > desde);
+  if (!h.length) return '';
+  const alertas = h.filter(e => e.alerta || e.inusual).length;
+  ofrecioResumen = Date.now();
+  return `Mientras no estabas hubo ${h.length === 1 ? 'un movimiento' : h.length + ' eventos'}, el último a las ${horaCorta(h[h.length - 1].t)}` + (alertas ? `, y ${alertas === 1 ? 'uno me pareció raro' : alertas + ' me parecieron raros'}` : '') + '. ¿Quieres que te cuente?';
+}
+async function contarPatrones() {
+  const miTurno = turno;
+  const e = estadisticas();
+  // gráfica de 24 horas en pantalla
+  const max = Math.max(1, ...e.porHora);
+  const barras = e.porHora.map((n, i) => `<div title="${i}:00" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px"><i style="display:block;width:70%;height:${Math.round(n / max * 100)}%;min-height:${n ? 3 : 1}px;background:${i < 5 ? '#ff5c8a' : '#26c6da'};border-radius:3px;box-shadow:0 0 6px #26c6da66"></i><small style="font-size:8px;color:#4d7f88">${i % 3 === 0 ? i : ''}</small></div>`).join('');
+  const recientes = e.semana.slice(-8).reverse().map(x => `<div class="disp${x.alerta || x.inusual ? ' tv' : ''}"><b>${x.alerta || x.inusual ? '⚠️' : x.tipo === 'sonido' ? '🔊' : '👣'} ${escaparHtml((x.ia || x.txt).slice(0, 90))}</b><span>${new Date(x.t).toLocaleString('es-GT', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>`).join('');
+  ejecutarPantalla('lista', { texto: 'ACTIVIDAD DE LA CASA · 7 DÍAS', ms: 120000, html: `<div class="sec">EVENTOS POR HORA</div><div style="display:flex;height:110px;gap:1px;margin:6px 0 14px">${barras}</div><div class="sec">HOY ${e.hoy.length} · AYER ${e.ayer.length} · PROMEDIO ${e.promedio.toFixed(1)}/DÍA</div>${recientes || '<pre>Todavía no hay eventos guardados.</pre>'}` });
+  if (!e.total) { decir(T('Todavía no tengo eventos guardados. Conforme la cámara detecte movimiento, voy a ir aprendiendo los horarios de la casa.', 'No events yet.'), () => seguir('nada')); return; }
+  if (!cfg().key) { decir(`Hoy hubo ${e.hoy.length} eventos y ayer ${e.ayer.length}. Las horas con más movimiento son ${e.top.map(h => 'las ' + h).join(', ')}.`, () => seguir('nada')); return; }
+  asis = 'pensando'; etiqueta(T('ANALIZANDO', 'ANALYZING'));
+  const lineas = e.semana.slice(-40).map(x => `${new Date(x.t).toLocaleString('es-GT', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${x.tipo}${x.inusual ? ' · HORA POCO COMÚN' : ''}${x.alerta ? ' · ALERTA' : ''} · ${x.ia || x.txt}`).join('\n');
+  const prompt = promptBase() + `
+Analiza la actividad de la casa de los últimos 7 días y cuéntale a David lo importante, como un buen guardia que conoce la casa: qué pasó hoy, si algo se sale de lo normal (horas raras, personas que no son de la familia, actividad de madrugada) y los patrones (a qué horas hay más movimiento, rutinas). Máximo 4 frases cortas, en español, sin listas. Si todo es normal, dilo.
+Eventos por hora (0 a 23): ${e.porHora.join(',')}
+Hoy: ${e.hoy.length} · Ayer: ${e.ayer.length} · Promedio: ${e.promedio.toFixed(1)} por día · Madrugada (0-5 h): ${e.noche.length}
+Eventos recientes:
+${lineas}
+Responde SOLO este JSON: {"respuesta":"lo que dirás","recordar":"un patrón nuevo y útil para tu memoria (por ejemplo 'La casa suele tener movimiento de 6 a 8 de la mañana'), o vacío"}`;
+  let res;
+  try { res = await gemini([{ text: prompt }], 500); }
+  catch (x) { if (miTurno !== turno) return; decir(`Hoy hubo ${e.hoy.length} eventos y ayer ${e.ayer.length}.`, () => seguir('nada')); return; }
+  if (miTurno !== turno || pc) return;
+  if (res.recordar) recordar(res.recordar);
+  decir(res.respuesta || 'Todo tranquilo.', () => seguir('nada'));
+}
+
+// ================= PERMISOS =================
+casaNativo.permisos = json => { log('Permisos: ' + json); if ($('ajustes').style.display === 'flex') pintarPermisos(); };
+function pintarPermisos() {
+  let p = {}; try { p = JSON.parse(A.permisos()); } catch (e) {}
+  const filas = [
+    ['ubicacion', '📍 Ubicación', 'Para rutas desde la casa', 'opcionales'],
+    ['gps', '🛰️ Ubicación del celular encendida', 'El GPS / ubicación del sistema', 'gps'],
+    ['bluetooth', '🔵 Bluetooth', 'Para buscar aparatos cercanos', 'opcionales'],
+    ['superponer', '🪟 Mostrar sobre otras apps', 'Trabajar en segundo plano', 'superponer'],
+    ['instalar', '⬆️ Instalar actualizaciones', 'Actualizar sin desinstalar', 'instalar']
+  ];
+  $('aPermisos').innerHTML = filas.map(([k, t, sub, tipo]) => `<div class="fila"><div class="t">${t}<small>${sub}</small></div>${p[k] ? '<div class="valor">✓</div>' : `<button class="mini" data-p="${tipo}">Activar</button>`}</div>`).join('');
+}
+
 // ================= VIGILANTE DEL OÍDO =================
 // Si algo se traba, T-Bot se reinicia solo para no quedarse "sordo".
 let ultimaActividad = Date.now();
@@ -1572,7 +1846,7 @@ function actividad() { ultimaActividad = Date.now(); }
 setInterval(() => {
   if (!NATIVO || pc) return;
   if (asis === 'reposo' && !enConversacion && modo !== 'privado') { try { A.reiniciarOido(); } catch (e) {} return; }
-  if (teleEspera || rutaEspera) return;
+  if (teleEspera || rutaEspera || escaneoEspera) return;
   if (asis !== 'reposo' && asis !== 'llamada' && Date.now() - ultimaActividad > 60000) {
     log('Me quedé trabado en "' + asis + '", me reinicio');
     teleEspera = null; vozDespues = null; enConversacion = false;
@@ -1739,6 +2013,7 @@ function abrirAjustes() {
   $('aFirma').textContent = info.firma ? 'Firma ' + info.firma : '';
   $('aSuper').textContent = A.puedeSuperponer() ? '🎵 Permiso de Spotify: listo ✓' : '🎵 Dar permiso para volver de Spotify';
   $('log').textContent = lineas.join('\n');
+  pintarPermisos();
   $('ajustes').scrollTop = 0;
   $('ajustes').style.display = 'flex';
   try { A.atenuar(false); } catch (e) {}
@@ -1780,6 +2055,8 @@ $('aTele').onclick = () => {
   despertarNucleo(); pintarHud(); A.enfoque(true);
   setTimeout(() => atenderTexto('prueba la tele'), 1500);
 };
+$('aPermisos').onclick = e => { const b = e.target.closest('button[data-p]'); if (b) A.pedirPermiso(b.dataset.p); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden && $('ajustes').style.display === 'flex') pintarPermisos(); });
 $('aActualizar').onclick = () => { actPorVoz = false; $('aActEstado').textContent = 'Buscando…'; A.buscarActualizacion(true); };
 
 // respuestas del actualizador (Java)

@@ -79,4 +79,64 @@ public final class Waze {
         try { return new JSONObject().put("ok", false).put("error", ultimoError).toString(); }
         catch (Exception e) { return "{\"ok\":false}"; }
     }
+
+    /**
+     * Busca un lugar como lo hace Waze (y si no, OpenStreetMap), cerca de la casa.
+     * Devuelve {ok, lugares:[{nombre, direccion, lat, lon, fuente}]}.
+     */
+    public static String buscarLugar(String q, double cercaLat, double cercaLon) {
+        JSONArray lugares = new JSONArray();
+        // 1) el buscador de Waze (el mismo que usa la app)
+        for (String region : new String[]{"row-SearchServer", "SearchServer"}) {
+            if (lugares.length() > 0) break;
+            try {
+                String url = "https://www.waze.com/" + region + "/mozi?q=" + URLEncoder.encode(q, "UTF-8")
+                        + "&lang=es&origin=livemap&lat=" + cercaLat + "&lon=" + cercaLon;
+                Request r = new Request.Builder().url(url)
+                        .header("User-Agent", "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36")
+                        .header("Referer", "https://www.waze.com/live-map/").build();
+                try (Response res = C.newCall(r).execute()) {
+                    String txt = res.body() != null ? res.body().string() : "";
+                    if (res.code() != 200 || !txt.trim().startsWith("[")) continue;
+                    JSONArray a = new JSONArray(txt);
+                    for (int i = 0; i < a.length() && lugares.length() < 5; i++) {
+                        JSONObject o = a.getJSONObject(i);
+                        JSONObject loc = o.optJSONObject("location");
+                        if (loc == null) continue;
+                        double lat = loc.optDouble("lat", loc.optDouble("y", 0)), lon = loc.optDouble("lon", loc.optDouble("x", 0));
+                        if (lat == 0 || lon == 0) continue;
+                        // solo lugares de Guatemala y alrededores
+                        if (lat < 13 || lat > 18.5 || lon < -93 || lon > -88) continue;
+                        String calle = o.optString("streetName", "");
+                        String ciudad = o.optString("city", "");
+                        lugares.put(new JSONObject().put("nombre", o.optString("name", q)).put("direccion", (calle + (ciudad.isEmpty() ? "" : ", " + ciudad)).replaceAll("^, ", ""))
+                                .put("lat", lat).put("lon", lon).put("fuente", "waze"));
+                    }
+                }
+            } catch (Exception e) { Log.w("AsistenteCasa", "waze buscar", e); }
+        }
+        // 2) OpenStreetMap
+        if (lugares.length() == 0) {
+            try {
+                String vb = (cercaLon - 1.5) + "," + (cercaLat + 1.5) + "," + (cercaLon + 1.5) + "," + (cercaLat - 1.5);
+                String url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=gt&accept-language=es&viewbox=" + vb + "&q=" + URLEncoder.encode(q, "UTF-8");
+                Request r = new Request.Builder().url(url).header("User-Agent", "T-Bot-asistente-casa/7 (Guatemala)").build();
+                try (Response res = C.newCall(r).execute()) {
+                    String txt = res.body() != null ? res.body().string() : "";
+                    if (res.code() == 200 && txt.trim().startsWith("[")) {
+                        JSONArray a = new JSONArray(txt);
+                        for (int i = 0; i < a.length(); i++) {
+                            JSONObject o = a.getJSONObject(i);
+                            String[] partes = o.optString("display_name", q).split(",");
+                            String dir = partes.length > 2 ? (partes[1].trim() + ", " + partes[2].trim()) : "";
+                            lugares.put(new JSONObject().put("nombre", partes[0].trim()).put("direccion", dir)
+                                    .put("lat", o.optDouble("lat")).put("lon", o.optDouble("lon")).put("fuente", "osm"));
+                        }
+                    }
+                }
+            } catch (Exception e) { Log.w("AsistenteCasa", "osm buscar", e); }
+        }
+        try { return new JSONObject().put("ok", lugares.length() > 0).put("lugares", lugares).toString(); }
+        catch (Exception e) { return "{\"ok\":false}"; }
+    }
 }
